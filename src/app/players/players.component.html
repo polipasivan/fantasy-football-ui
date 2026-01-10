@@ -1,0 +1,121 @@
+<div class="container">
+  <div class="header-card">
+    <div class="header-content">
+      <div class="header-left">
+        <div class="icon-container">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1>Player Rankings</h1>
+          <p>Browse and filter available players</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a routerLink="/" class="btn-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Back to Draft
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend-card">
+    <div class="legend-content">
+      <span class="legend-label">Position Key:</span>
+      <div class="legend-items">
+        <div class="legend-item position-qb">
+          <span class="legend-text">QB</span>
+        </div>
+        <div class="legend-item position-rb">
+          <span class="legend-text">RB</span>
+        </div>
+        <div class="legend-item position-wr">
+          <span class="legend-text">WR</span>
+        </div>
+        <div class="legend-item position-te">
+          <span class="legend-text">TE</span>
+        </div>
+        <div class="legend-item position-def">
+          <span class="legend-text">DEF</span>
+        </div>
+        <div class="legend-item position-k">
+          <span class="legend-text">K</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-card">
+    <div class="filters-content">
+      <div class="filter-group">
+        <label for="team-filter" class="filter-label">Filter by Team:</label>
+        <select
+          id="team-filter"
+          [(ngModel)]="selectedTeam"
+          (change)="applyFilters()"
+          class="filter-select">
+          <option value="">All Teams</option>
+          <option *ngFor="let team of teams" [value]="team">{{ team }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="position-filter" class="filter-label">Filter by Position:</label>
+        <select
+          id="position-filter"
+          [(ngModel)]="selectedPosition"
+          (change)="applyFilters()"
+          class="filter-select">
+          <option value="">All Positions</option>
+          <option *ngFor="let position of positions" [value]="position">{{ position }}</option>
+        </select>
+      </div>
+
+      <button class="btn-clear" (click)="clearFilters()">
+        Clear Filters
+      </button>
+
+      <div class="results-count">
+        <span>{{ filteredPlayers.length }} players</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-wrapper">
+      <table class="players-table">
+        <thead>
+          <tr>
+            <th class="rank-header">Rank</th>
+            <th class="name-header">Player Name</th>
+            <th class="team-header-col">Team</th>
+            <th class="position-header">Position</th>
+            <th class="bye-header">Bye</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let player of filteredPlayers"
+              class="table-row"
+              [ngClass]="[getPositionClass(player.position), isDrafted(player.name) ? 'drafted' : '']">
+            <td class="rank-cell">{{ player.rank }}</td>
+            <td class="name-cell">{{ player.name }}</td>
+            <td class="team-cell">{{ player.team }}</td>
+            <td class="position-cell">
+              <span class="position-badge" [ngClass]="getPositionClass(player.position)">
+                {{ player.position }}
+              </span>
+            </td>
+            <td class="bye-cell">{{ player.bye }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

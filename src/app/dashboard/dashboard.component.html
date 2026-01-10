@@ -1,0 +1,147 @@
+<div class="container">
+  <div class="header-card">
+    <div class="header-content">
+      <div class="header-left">
+        <div class="icon-container">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1>Fantasy Football Draft</h1>
+          <p>Manage your draft picks</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a routerLink="/players" class="btn-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <line x1="23" y1="11" x2="17" y2="11"></line>
+            <line x1="20" y1="8" x2="20" y2="14"></line>
+          </svg>
+          View All Players
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend-card">
+    <div class="legend-content">
+      <span class="legend-label">Position Key:</span>
+      <div class="legend-items">
+        <div class="legend-item position-qb">
+          <span class="legend-text">QB</span>
+        </div>
+        <div class="legend-item position-rb">
+          <span class="legend-text">RB</span>
+        </div>
+        <div class="legend-item position-wr">
+          <span class="legend-text">WR</span>
+        </div>
+        <div class="legend-item position-te">
+          <span class="legend-text">TE</span>
+        </div>
+        <div class="legend-item position-def">
+          <span class="legend-text">DEF</span>
+        </div>
+        <div class="legend-item position-k">
+          <span class="legend-text">K</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-wrapper">
+      <table class="draft-table">
+        <thead>
+          <tr>
+            <th class="round-header">Round</th>
+            <th *ngFor="let team of teams" class="team-header">{{ team }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let round of roundNumbers" class="table-row">
+            <td class="round-cell">
+              <div class="round-number">{{ round }}</div>
+            </td>
+            <td *ngFor="let team of teams" class="player-cell">
+              <div *ngIf="getPlayer(team, round) && !isEditing(team, round)"
+                   class="player-card"
+                   [ngClass]="getPositionClass(team, round)">
+                <span class="player-name">{{ getPlayer(team, round) }}</span>
+                <button class="remove-btn" (click)="removePlayer(team, round)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              
+              <div *ngIf="isEditing(team, round)" class="edit-form">
+                <div class="autocomplete-wrapper">
+                  <div class="input-container">
+                    <input
+                      type="text"
+                      [(ngModel)]="playerName"
+                      (input)="onPlayerInput()"
+                      (keydown)="onKeyDown($event, team, round)"
+                      (keypress)="onKeyPress($event, team, round)"
+                      placeholder="Player name"
+                      class="player-input"
+                      autofocus
+                    />
+                    <button
+                      *ngIf="playerName"
+                      class="clear-btn"
+                      (click)="clearPlayerName()"
+                      type="button"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                  <div *ngIf="showSuggestions" class="suggestions-dropdown">
+                    <div
+                      *ngFor="let player of filteredPlayers; let i = index"
+                      class="suggestion-item"
+                      [class.selected]="i === selectedSuggestionIndex"
+                      (click)="selectPlayer(player)"
+                      (mouseenter)="selectedSuggestionIndex = i"
+                    >
+                      <div class="player-info">
+                        <span class="player-name-suggestion">{{ player.name }}</span>
+                        <span class="player-meta">{{ player.team }} - {{ player.position }}</span>
+                      </div>
+                      <span class="player-rank">Rank {{ player.rank }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="button-group">
+                  <button class="add-btn" (click)="addPlayer(team, round)">Add</button>
+                  <button class="cancel-btn" (click)="cancelEditing()">Cancel</button>
+                </div>
+              </div>
+              
+              <button *ngIf="!getPlayer(team, round) && !isEditing(team, round)" 
+                      class="add-player-btn"
+                      (click)="startEditing(team, round)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Add Player</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
