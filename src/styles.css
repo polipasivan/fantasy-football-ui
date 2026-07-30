@@ -1,1 +1,113 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles + theme tokens */
+
+:root {
+  /* Position palette — identical across themes */
+  --qb-1: #fb7185; --qb-2: #e11d48;
+  --rb-1: #4ade80; --rb-2: #16a34a;
+  --wr-1: #60a5fa; --wr-2: #2563eb;
+  --te-1: #fb923c; --te-2: #ea580c;
+  --def-1: #c084fc; --def-2: #9333ea;
+  --k-1: #22d3ee; --k-2: #0891b2;
+}
+
+/* ---------- Dark theme (default) ---------- */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0a0a0b;
+  --bg-glow: rgba(120, 80, 200, 0.10);
+  --panel: #131316;
+  --panel-2: #1a1a1f;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.12);
+
+  --text: #f5f5f7;
+  --text-dim: #9b9ba4;
+  --text-faint: #6b6b74;
+
+  --input-bg: #0f0f12;
+  --dropdown-bg: #16161b;
+
+  --title-1: #ffffff;
+  --title-2: #b9b9c2;
+
+  --surface-1: rgba(255, 255, 255, 0.06);
+  --surface-1-hover: rgba(255, 255, 255, 0.10);
+  --surface-2: rgba(255, 255, 255, 0.02);
+  --surface-2-hover: rgba(255, 255, 255, 0.05);
+  --btn-hover: #23232a;
+  --row-hover: rgba(255, 255, 255, 0.03);
+
+  --scroll-thumb: rgba(255, 255, 255, 0.12);
+  --scroll-thumb-hover: rgba(255, 255, 255, 0.22);
+
+  --panel-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  --card-shadow: 0 4px 14px rgba(0, 0, 0, 0.30);
+}
+
+/* ---------- Light theme ---------- */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #eef0f4;
+  --bg-glow: rgba(120, 80, 200, 0.10);
+  --panel: #ffffff;
+  --panel-2: #f4f5f8;
+  --border: rgba(0, 0, 0, 0.09);
+  --border-strong: rgba(0, 0, 0, 0.14);
+
+  --text: #1a1a1f;
+  --text-dim: #5b5b64;
+  --text-faint: #8a8a93;
+
+  --input-bg: #ffffff;
+  --dropdown-bg: #ffffff;
+
+  --title-1: #16161a;
+  --title-2: #55555f;
+
+  --surface-1: rgba(0, 0, 0, 0.05);
+  --surface-1-hover: rgba(0, 0, 0, 0.09);
+  --surface-2: rgba(0, 0, 0, 0.02);
+  --surface-2-hover: rgba(0, 0, 0, 0.05);
+  --btn-hover: #e7e9ee;
+  --row-hover: rgba(0, 0, 0, 0.03);
+
+  --scroll-thumb: rgba(0, 0, 0, 0.18);
+  --scroll-thumb-hover: rgba(0, 0, 0, 0.30);
+
+  --panel-shadow: 0 12px 34px rgba(20, 20, 40, 0.10);
+  --card-shadow: 0 4px 14px rgba(20, 20, 40, 0.12);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+}
+
+/* Smooth theme transition on the main themed surfaces */
+.container,
+.board-panel,
+.board-header,
+.team-header,
+.round-chip,
+.round-header,
+.round-cell,
+.player-card,
+.add-player-btn,
+.btn-view-players,
+.theme-toggle,
+.legend-pill,
+.players-table th,
+.filter-select,
+.filter-label,
+.player-input,
+.btn-clear,
+.table-row,
+.board-title,
+.board-subtitle {
+  transition: background-color 0.25s ease, border-color 0.25s ease,
+              color 0.25s ease, box-shadow 0.25s ease;
+}

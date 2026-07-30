@@ -22,7 +22,7 @@ export class PlayerService {
   constructor(private http: HttpClient) { }
 
   loadPlayers(): Observable<Player[]> {
-    return this.http.get('FantasyPros_2025_data.csv', { responseType: 'text' })
+    return this.http.get('FantasyPros_2026_Draft_ALL_Rankings.csv', { responseType: 'text' })
       .pipe(
         map(csv => {
           this.players = this.parseCSV(csv);
@@ -54,10 +54,15 @@ export class PlayerService {
 
       // Parse CSV line (handling quoted values)
       const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-      if (!matches || matches.length < 8) continue;
+      // Require at least the core columns (rank .. bye week)
+      if (!matches || matches.length < 6) continue;
 
-      const cleanValue = (val: string) => val.replace(/^"(.*)"$/, '$1').trim();
+      const cleanValue = (val: string | undefined) =>
+        (val ?? '').replace(/^"(.*)"$/, '$1').trim();
 
+      // 2026 schema columns:
+      // 0 RK | 1 TIERS | 2 PLAYER NAME | 3 TEAM | 4 POS | 5 BYE WEEK
+      // 6 UPSIDE | 7 BUST | 8 SOS SEASON | 9 ECR VS. ADP
       players.push({
         rank: cleanValue(matches[0]),
         tier: cleanValue(matches[1]),
@@ -65,8 +70,8 @@ export class PlayerService {
         team: cleanValue(matches[3]),
         position: cleanValue(matches[4]),
         bye: cleanValue(matches[5]),
-        sos: cleanValue(matches[6]),
-        ecrVsAdp: cleanValue(matches[7])
+        sos: cleanValue(matches[8]),
+        ecrVsAdp: cleanValue(matches[9])
       });
     }
 
