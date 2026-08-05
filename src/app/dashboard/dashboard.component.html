@@ -1,28 +1,39 @@
 <div class="container">
   <div class="board-header">
-    <button class="theme-toggle" type="button" (click)="theme.toggle()"
-            [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
-      <ng-container *ngIf="theme.theme() === 'dark'; else moonIcon">
+    <div class="header-left-actions">
+      <button class="theme-toggle" type="button" (click)="theme.toggle()"
+              [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+        <ng-container *ngIf="theme.theme() === 'dark'; else moonIcon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <span class="theme-toggle-label">Light</span>
+        </ng-container>
+        <ng-template #moonIcon>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <span class="theme-toggle-label">Dark</span>
+        </ng-template>
+      </button>
+
+      <button class="leave-draft-btn" type="button" (click)="leaveDraft()" aria-label="Leave draft">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="23"></line>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-          <line x1="1" y1="12" x2="3" y2="12"></line>
-          <line x1="21" y1="12" x2="23" y2="12"></line>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
         </svg>
-        <span class="theme-toggle-label">Light</span>
-      </ng-container>
-      <ng-template #moonIcon>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-        </svg>
-        <span class="theme-toggle-label">Dark</span>
-      </ng-template>
-    </button>
+        <span class="leave-draft-label">Leave Draft</span>
+      </button>
+    </div>
 
     <a routerLink="/players" class="btn-view-players">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -50,19 +61,30 @@
     </div>
   </div>
 
+  <div class="board-panel-toolbar" *ngIf="teams.length > 0">
+    <button class="add-team-btn-compact" type="button" (click)="openAddTeamModal()" aria-label="Add team">
+      <span class="add-team-plus-small">+</span>
+      <span>Add Team</span>
+    </button>
+  </div>
+
   <div class="board-panel">
-    <div class="table-wrapper">
+    <div class="board-loading" *ngIf="isLoading()">
+      <span class="spinner"></span>
+      <p>Loading draft board…</p>
+    </div>
+    <div class="table-wrapper" *ngIf="!isLoading()">
       <table class="draft-table">
         <thead>
           <tr>
             <th class="round-header">RD</th>
             <th *ngFor="let team of teams; let ti = index" class="team-header">
-              <div class="team-head-inner">
+              <div class="team-head-inner" (click)="openTeamRoster(team)" role="button" tabindex="0" [attr.aria-label]="'View ' + team + ' roster'">
                 <div class="team-avatar" [ngClass]="getTeamColorClass(ti)">{{ getTeamMonogram(team) }}</div>
                 <div class="team-name">{{ team }}</div>
               </div>
             </th>
-            <th class="add-team-header">
+            <th class="add-team-header" *ngIf="teams.length === 0">
               <button class="add-team-btn" type="button" (click)="openAddTeamModal()" aria-label="Add team">
                 <span class="add-team-plus">+</span>
                 <span class="add-team-label">Add Team</span>
@@ -137,6 +159,7 @@
                     </div>
                   </div>
                 </div>
+                <p class="cell-error" *ngIf="rosterError">{{ rosterError }}</p>
                 <div class="button-group">
                   <button class="add-btn" (click)="addPlayer(team, round)">Add</button>
                   <button class="cancel-btn" (click)="cancelEditing()">Cancel</button>
@@ -154,7 +177,7 @@
                 <span>Add Player</span>
               </button>
             </td>
-            <td class="add-team-cell"></td>
+            <td class="add-team-cell" *ngIf="teams.length === 0"></td>
           </tr>
         </tbody>
       </table>
@@ -182,4 +205,13 @@
       </div>
     </div>
   </div>
+
+  <!-- Team roster modal -->
+  <app-team-roster-modal
+    [team]="selectedRosterTeam"
+    [teamIndex]="selectedRosterTeam ? teams.indexOf(selectedRosterTeam) : 0"
+    [roster]="selectedRosterTeam ? teamRosters[selectedRosterTeam] : null"
+    [loading]="isLoading()"
+    (closed)="closeTeamRoster()">
+  </app-team-roster-modal>
 </div>

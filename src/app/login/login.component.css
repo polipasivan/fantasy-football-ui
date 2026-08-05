@@ -1,0 +1,147 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(1200px 600px at 50% -200px, rgba(120, 80, 200, 0.10), transparent 70%),
+    var(--bg);
+  padding: 1.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 24rem;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: var(--panel-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.login-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+}
+
+.login-input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.18s ease;
+}
+
+.login-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.login-input::placeholder {
+  color: var(--text-faint);
+}
+
+/* ---------- Draft room dropdown ---------- */
+.draft-room-dropdown {
+  position: relative;
+}
+
+.login-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  outline: none;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.login-select-trigger[aria-expanded='true'] {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.dropdown-chevron {
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.dropdown-chevron-open {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--dropdown-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.dropdown-option {
+  padding: 0.65rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.dropdown-option:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+.dropdown-option:hover,
+.dropdown-option.selected {
+  background: rgba(139, 92, 246, 0.15);
+}
+
+.login-label {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.login-enter-btn {
+  margin-top: 0.5rem;
+  padding: 0.7rem 1rem;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  border: none;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: filter 0.18s ease;
+}
+
+.login-enter-btn:hover {
+  filter: brightness(1.1);
+}

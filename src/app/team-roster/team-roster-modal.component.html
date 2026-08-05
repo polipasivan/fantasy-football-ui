@@ -1,0 +1,53 @@
+<div class="modal-overlay" *ngIf="team" (click)="close()">
+  <div class="modal roster-modal" (click)="$event.stopPropagation()">
+    <div class="roster-modal-header">
+      <div class="team-avatar" [ngClass]="getTeamColorClass()">{{ getTeamMonogram(team) }}</div>
+      <h2 class="modal-title">{{ team }}</h2>
+      <button class="roster-modal-close" type="button" (click)="close()" aria-label="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="roster-modal-loading" *ngIf="loading">
+      <span class="spinner"></span>
+      <p>Loading roster…</p>
+    </div>
+
+    <ng-container *ngIf="!loading">
+      <div class="roster-section" *ngFor="let group of roster?.starters">
+        <div class="roster-section-title">{{ group.position }}</div>
+        <div class="roster-slot" *ngFor="let slot of group.slots" [ngClass]="'position-' + group.position.toLowerCase()" [class.roster-slot-empty]="!slot">
+          <ng-container *ngIf="slot; else emptySlot">
+            <span class="roster-slot-name-group">
+              <span class="roster-slot-pos">{{ slot.position }}</span>
+              <span class="roster-slot-name">{{ slot.name }}</span>
+            </span>
+            <span class="roster-slot-round">RD {{ slot.round }}</span>
+          </ng-container>
+          <ng-template #emptySlot>
+            <span class="roster-slot-placeholder">Empty</span>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="roster-section" *ngIf="roster">
+        <div class="roster-section-title">Bench</div>
+        <div class="roster-slot roster-slot-bench" *ngFor="let slot of roster.bench" [class.roster-slot-empty]="!slot">
+          <ng-container *ngIf="slot; else emptyBenchSlot">
+            <span class="roster-slot-name-group">
+              <span class="roster-slot-pos">{{ slot.position }}</span>
+              <span class="roster-slot-name">{{ slot.name }}</span>
+            </span>
+            <span class="roster-slot-round">RD {{ slot.round }}</span>
+          </ng-container>
+          <ng-template #emptyBenchSlot>
+            <span class="roster-slot-placeholder">Empty</span>
+          </ng-template>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

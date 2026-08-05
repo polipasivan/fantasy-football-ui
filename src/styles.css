@@ -10,6 +10,21 @@
   --k-1: #22d3ee; --k-2: #0891b2;
 }
 
+/* ---------- Shared loading spinner ---------- */
+@keyframes app-spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--border-strong);
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: app-spin 0.7s linear infinite;
+}
+
 /* ---------- Dark theme (default) ---------- */
 :root,
 :root[data-theme='dark'] {

@@ -1,10 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { EMPTY, catchError, interval, switchMap } from 'rxjs';
 import { PlayerService, Player } from '../services/player.service';
 import { ThemeService } from '../services/theme.service';
-import { DraftApiService } from '../services/draft-api.service';
+import { SessionService } from '../services/session.service';
+import { DraftApiService, DraftPlayer, DraftBoardResponse } from '../services/draft-api.service';
+import { TeamRosterModalComponent } from '../team-roster/team-roster-modal.component';
+import { RosterBreakdown, buildRosterBreakdown, hasOpenRosterSlot as hasOpenSlotInBreakdown } from '../team-roster/roster';
 
 interface DraftData {
   [key: string]: string;
@@ -20,7 +25,7 @@ interface ExportEntry {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TeamRosterModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -36,6 +41,31 @@ export class DashboardComponent implements OnInit {
   draftData: DraftData = {};
   editingCell: string | null = null;
   playerName: string = '';
+  rosterError: string | null = null;
+
+  // Per-team roster breakdown (starters + bench), kept in sync with draftData.
+  teamRosters: Record<string, RosterBreakdown> = {};
+
+  // Team roster modal state
+  selectedRosterTeam: string | null = null;
+
+  // Loading state — the board table stays hidden behind a spinner until both loads settle.
+  playersLoaded: boolean = false;
+  boardLoaded: boolean = false;
+
+  // How often other viewers' boards poll the backend for changes made by the commissioner.
+  private readonly pollIntervalMs = 4000;
+
+  // Cell keys with a player write currently in flight. A poll tick landing mid-write (or
+  // before a failed write has rolled back) must not clobber that optimistic local state
+  // with the stale server response — this set tells applyDraftBoard() what to leave alone.
+  // (Team adds don't need the same guard: confirmAddTeam only mutates `teams` after the
+  // server confirms, so there's no optimistic state for a poll to race against.)
+  private pendingCellWrites = new Set<string>();
+
+  isLoading(): boolean {
+    return !this.playersLoaded || !this.boardLoaded;
+  }
 
   // Autocomplete properties
   allPlayers: Player[] = [];
@@ -52,19 +82,35 @@ export class DashboardComponent implements OnInit {
   constructor(
     private playerService: PlayerService,
     public theme: ThemeService,
-    private draftApi: DraftApiService
+    private draftApi: DraftApiService,
+    private sessionService: SessionService,
+    private router: Router,
+    private destroyRef: DestroyRef
   ) {}
+
+  leaveDraft(): void {
+    this.sessionService.clearSession();
+    this.router.navigateByUrl('/login');
+  }
 
   ngOnInit(): void {
     this.roundNumbers = Array.from({ length: this.rounds }, (_, i) => i + 1);
     this.loadPlayers();
     this.loadDraftBoard();
+    this.startPolling();
   }
 
   loadPlayers(): void {
-    this.playerService.loadPlayers().subscribe(players => {
-      this.allPlayers = players;
-      console.log(`Loaded ${players.length} players from CSV`);
+    this.playerService.loadPlayers().subscribe({
+      next: (players) => {
+        this.allPlayers = players;
+        console.log(`Loaded ${players.length} players from CSV`);
+        this.playersLoaded = true;
+      },
+      error: (err) => {
+        console.error('Failed to load players', err);
+        this.playersLoaded = true;
+      }
     });
   }
 
@@ -72,21 +118,90 @@ export class DashboardComponent implements OnInit {
   loadDraftBoard(): void {
     this.draftApi.getDraftBoard().subscribe({
       next: (res) => {
-        const teams: string[] = [];
-        const draftData: DraftData = {};
-        (res.teams ?? []).forEach(team => {
-          teams.push(team.teamName);
-          (team.players ?? []).forEach(player => {
-            draftData[this.getCellKey(team.teamName, player.round)] = player.name;
-          });
-        });
-        this.teams = teams;
-        this.draftData = draftData;
+        this.applyDraftBoard(res);
+        this.boardLoaded = true;
       },
       error: (err) => {
         console.error('Failed to load draft board', err);
+        this.boardLoaded = true;
       }
     });
+  }
+
+  // Poll the backend on an interval so every open tab (commissioner and viewers alike)
+  // picks up picks/removals/teams made from someone else's tab. A failed tick is logged
+  // and skipped rather than killing the interval — the next tick just tries again.
+  private startPolling(): void {
+    interval(this.pollIntervalMs)
+      .pipe(
+        switchMap(() => this.draftApi.getDraftBoard().pipe(
+          catchError((err) => {
+            console.error('Draft board poll failed', err);
+            return EMPTY;
+          })
+        )),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((res) => this.applyDraftBoard(res));
+  }
+
+  // Rebuild teams/draftData from a server response, without stomping on any
+  // optimistic write that's still in flight (see pendingCellWrites/pendingTeamAdds).
+  private applyDraftBoard(res: DraftBoardResponse): void {
+    const teams: string[] = [];
+    const draftData: DraftData = {};
+    (res.teams ?? []).forEach(team => {
+      teams.push(team.teamName);
+      (team.players ?? []).forEach(player => {
+        draftData[this.getCellKey(team.teamName, player.round)] = player.name;
+      });
+    });
+
+    this.pendingCellWrites.forEach(key => {
+      if (key in this.draftData) {
+        draftData[key] = this.draftData[key];
+      } else {
+        delete draftData[key];
+      }
+    });
+
+    this.teams = teams;
+    this.draftData = draftData;
+    this.refreshAllRosters();
+  }
+
+  // ---------- Team rosters (starters + bench), kept in sync with draftData ----------
+
+  private getTeamPicks(team: string): DraftPlayer[] {
+    const picks: DraftPlayer[] = [];
+    for (let round = 1; round <= this.rounds; round++) {
+      const name = this.getPlayer(team, round);
+      if (!name) continue;
+      picks.push({ round, name, position: this.getPlayerPosition(team, round) });
+    }
+    return picks; // already round-ordered since the loop is ascending
+  }
+
+  private refreshTeamRoster(team: string): void {
+    this.teamRosters[team] = buildRosterBreakdown(this.getTeamPicks(team));
+  }
+
+  private refreshAllRosters(): void {
+    this.teams.forEach(team => this.refreshTeamRoster(team));
+  }
+
+  hasOpenRosterSlot(team: string, position: string): boolean {
+    return hasOpenSlotInBreakdown(this.teamRosters[team], position);
+  }
+
+  // ---------- Team roster modal ----------
+
+  openTeamRoster(team: string): void {
+    this.selectedRosterTeam = team;
+  }
+
+  closeTeamRoster(): void {
+    this.selectedRosterTeam = null;
   }
 
   // ---------- Add-team modal ----------
@@ -121,7 +236,9 @@ export class DashboardComponent implements OnInit {
 
     this.draftApi.addTeam(name).subscribe({
       next: (team) => {
-        this.teams.push(team?.teamName ?? name);
+        const teamName = team?.teamName ?? name;
+        this.teams.push(teamName);
+        this.refreshTeamRoster(teamName);
         this.addingTeam = false;
         this.showAddTeamModal = false;
         this.newTeamName = '';
@@ -198,6 +315,7 @@ export class DashboardComponent implements OnInit {
     this.playerName = '';
     this.showSuggestions = false;
     this.selectedSuggestionIndex = -1;
+    this.rosterError = null;
   }
 
   onPlayerInput(): void {
@@ -276,6 +394,15 @@ export class DashboardComponent implements OnInit {
     }
 
     const position = csvPlayer.position.match(/^[A-Z]+/)?.[0] ?? '';
+
+    // Check the team has an open roster slot for this position (or an open bench spot)
+    // before drafting. Shown as an inline message under the cell, not a browser alert.
+    if (!this.hasOpenRosterSlot(team, position)) {
+      this.rosterError = `${team} has no open ${position} slot or bench spot.`;
+      return;
+    }
+    this.rosterError = null;
+
     const key = this.getCellKey(team, round);
 
     // Optimistic update so the pick shows immediately.
@@ -283,14 +410,19 @@ export class DashboardComponent implements OnInit {
     this.playerName = '';
     this.editingCell = null;
     this.showSuggestions = false;
-    this.saveData();
+    this.refreshTeamRoster(team);
+    this.pendingCellWrites.add(key);
 
     // Persist the pick under the correct team + round.
     this.draftApi.addPlayer(team, { round, name: trimmedName, position }).subscribe({
+      next: () => {
+        this.pendingCellWrites.delete(key);
+      },
       error: (err) => {
         // Roll back the optimistic update if the server rejects it.
         delete this.draftData[key];
-        this.saveData();
+        this.refreshTeamRoster(team);
+        this.pendingCellWrites.delete(key);
         alert(err?.status === 404
           ? 'That team was not found on the server.'
           : 'Failed to save the pick. Please try again.');
@@ -304,16 +436,21 @@ export class DashboardComponent implements OnInit {
 
     // Optimistic removal so the cell clears immediately.
     delete this.draftData[key];
-    this.saveData();
+    this.refreshTeamRoster(team);
+    this.pendingCellWrites.add(key);
 
     // Persist the removal for the specific team + round.
     this.draftApi.deletePlayer(team, round).subscribe({
+      next: () => {
+        this.pendingCellWrites.delete(key);
+      },
       error: (err) => {
         // Roll back if the server rejects it.
         if (previous !== undefined) {
           this.draftData[key] = previous;
-          this.saveData();
+          this.refreshTeamRoster(team);
         }
+        this.pendingCellWrites.delete(key);
         console.error('Failed to delete player', err);
         alert('Failed to remove the player. Please try again.');
       }
@@ -325,6 +462,7 @@ export class DashboardComponent implements OnInit {
     this.playerName = '';
     this.showSuggestions = false;
     this.selectedSuggestionIndex = -1;
+    this.rosterError = null;
   }
 
   clearPlayerName(): void {
@@ -332,6 +470,7 @@ export class DashboardComponent implements OnInit {
     this.showSuggestions = false;
     this.filteredPlayers = [];
     this.selectedSuggestionIndex = -1;
+    this.rosterError = null;
   }
 
   onKeyPress(event: KeyboardEvent, team: string, round: number): void {
@@ -386,7 +525,7 @@ export class DashboardComponent implements OnInit {
           });
           
           this.draftData = newData;
-          this.saveData();
+          this.refreshAllRosters();
         } catch (error) {
           alert('Error importing file');
         }
@@ -396,9 +535,5 @@ export class DashboardComponent implements OnInit {
     
     // Reset input
     input.value = '';
-  }
-
-  private saveData(): void {
-    localStorage.setItem('fantasyDraft', JSON.stringify(this.draftData));
   }
 }

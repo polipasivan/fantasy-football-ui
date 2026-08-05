@@ -35,14 +35,6 @@ export class PlayerService {
     return this.players;
   }
 
-  getDraftedPlayers(): Set<string> {
-    const stored = localStorage.getItem('fantasyDraft');
-    if (!stored) return new Set();
-
-    const draftData = JSON.parse(stored);
-    return new Set(Object.values(draftData));
-  }
-
   private parseCSV(csv: string): Player[] {
     const lines = csv.split('\n');
     const players: Player[] = [];

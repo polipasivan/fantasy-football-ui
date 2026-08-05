@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PlayerService, Player } from '../services/player.service';
+import { DraftApiService } from '../services/draft-api.service';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -24,19 +25,32 @@ export class PlayersComponent implements OnInit {
   teams: string[] = [];
   positions: string[] = [];
 
-  constructor(private playerService: PlayerService) {}
+  constructor(private playerService: PlayerService, private draftApi: DraftApiService) {}
 
   ngOnInit(): void {
     this.playerService.loadPlayers().subscribe(players => {
       this.allPlayers = players;
       this.filteredPlayers = players;
       this.extractUniqueValues();
-      this.loadDraftedPlayers();
     });
+    this.loadDraftedPlayers();
   }
 
+  // Cross-outs must reflect the current session's draft board, fetched fresh on every
+  // page load — not a cached, session-agnostic snapshot.
   loadDraftedPlayers(): void {
-    this.draftedPlayers = this.playerService.getDraftedPlayers();
+    this.draftApi.getDraftBoard().subscribe({
+      next: (res) => {
+        const drafted = new Set<string>();
+        (res.teams ?? []).forEach(team => {
+          (team.players ?? []).forEach(player => drafted.add(player.name));
+        });
+        this.draftedPlayers = drafted;
+      },
+      error: (err) => {
+        console.error('Failed to load drafted players', err);
+      }
+    });
   }
 
   extractUniqueValues(): void {

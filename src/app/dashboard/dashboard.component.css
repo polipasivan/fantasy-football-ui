@@ -41,11 +41,18 @@
   transform: translateY(-1px);
 }
 
-/* Theme toggle (top-left of the board header) */
-.theme-toggle {
+/* Theme toggle + Leave Draft (top-left of the board header) */
+.header-left-actions {
   position: absolute;
   top: 0;
   left: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.theme-toggle,
+.leave-draft-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -60,17 +67,25 @@
   transition: all 0.18s ease;
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.leave-draft-btn:hover {
   background: var(--btn-hover);
   border-color: var(--border-strong);
   transform: translateY(-1px);
 }
 
-.theme-toggle svg {
+.leave-draft-btn:hover {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.theme-toggle svg,
+.leave-draft-btn svg {
   display: block;
 }
 
-.theme-toggle-label {
+.theme-toggle-label,
+.leave-draft-label {
   line-height: 1;
 }
 
@@ -154,6 +169,57 @@
   border-radius: 0.85rem;
 }
 
+/* ---------- Compact "Add Team" button (shown above the board panel once teams exist) ---------- */
+.board-panel-toolbar {
+  max-width: 112rem;
+  margin: 0 auto 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add-team-btn-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.add-team-btn-compact:hover {
+  background: var(--btn-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.add-team-plus-small {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.board-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 1rem;
+}
+
+.board-loading p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
 .draft-table {
   width: 100%;
   border-collapse: separate;
@@ -196,6 +262,13 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
+  border-radius: 0.6rem;
+  transition: background 0.15s ease;
+}
+
+.team-head-inner:hover {
+  background: var(--surface-1-hover);
 }
 
 .team-avatar {
@@ -678,6 +751,14 @@
 .modal-input:focus {
   border-color: #8b5cf6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.cell-error {
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f87171;
+  text-align: center;
 }
 
 .modal-error {

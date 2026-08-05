@@ -1,0 +1,187 @@
+/* ---------- Modal shell (matches dashboard.component.css .modal-overlay/.modal) ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  width: 100%;
+  max-width: 24rem;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: var(--panel-shadow);
+}
+
+.roster-modal {
+  max-width: 28rem;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ---------- Header ---------- */
+.roster-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.team-avatar {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.avatar-color-0 { background: linear-gradient(135deg, #f43f5e, #be123c); }
+.avatar-color-1 { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.avatar-color-2 { background: linear-gradient(135deg, #22c55e, #15803d); }
+.avatar-color-3 { background: linear-gradient(135deg, #06b6d4, #0e7490); }
+.avatar-color-4 { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+.avatar-color-5 { background: linear-gradient(135deg, #ec4899, #be185d); }
+.avatar-color-6 { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.avatar-color-7 { background: linear-gradient(135deg, #14b8a6, #0f766e); }
+.avatar-color-8 { background: linear-gradient(135deg, #eab308, #a16207); }
+.avatar-color-9 { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+
+.roster-modal-close {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: 0.4rem;
+  transition: all 0.15s ease;
+}
+
+.roster-modal-close:hover {
+  background: var(--surface-1-hover);
+  color: var(--text);
+}
+
+.roster-modal-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1rem;
+}
+
+.roster-modal-loading p {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* ---------- Roster sections ---------- */
+.roster-section {
+  margin-bottom: 1rem;
+}
+
+.roster-section-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.4rem;
+}
+
+.roster-slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.35rem;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-1);
+}
+
+.roster-slot.position-qb  { border-left: 4px solid var(--qb-1); }
+.roster-slot.position-rb  { border-left: 4px solid var(--rb-1); }
+.roster-slot.position-wr  { border-left: 4px solid var(--wr-1); }
+.roster-slot.position-te  { border-left: 4px solid var(--te-1); }
+.roster-slot.position-dst { border-left: 4px solid var(--def-1); }
+.roster-slot.position-k   { border-left: 4px solid var(--k-1); }
+
+.roster-slot-bench {
+  border-left: 4px solid var(--border-strong);
+}
+
+.roster-slot-empty {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.roster-slot-name-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.roster-slot-pos {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.35rem;
+  text-transform: uppercase;
+}
+
+.roster-slot-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roster-slot-round {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.roster-slot-placeholder {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
