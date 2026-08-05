@@ -837,16 +837,49 @@
   background: transparent;
 }
 
-@media (max-width: 768px) {
+/* Below this width the corner buttons no longer have room beside the
+   centered title, so pull them out of absolute positioning and stack
+   them above the title in normal flow instead. */
+@media (max-width: 1200px) {
+  .board-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .header-left-actions,
   .btn-view-players,
   .theme-toggle {
     position: static;
-    display: inline-flex;
-    margin-bottom: 1rem;
   }
 
-  .theme-toggle {
-    margin-right: 0.5rem;
+  .header-left-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-left-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .theme-toggle,
+  .leave-draft-btn,
+  .btn-view-players {
+    display: inline-flex;
+    justify-content: center;
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .btn-view-players {
+    margin-bottom: 1rem;
   }
 
   .board-title {
