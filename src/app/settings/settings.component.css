@@ -1,0 +1,673 @@
+.container {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 50% -200px, rgba(120, 80, 200, 0.10), transparent 70%),
+    var(--bg);
+  padding: 2rem 1.5rem 3rem;
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Header ---------- */
+.settings-header {
+  max-width: 60rem;
+  width: 100%;
+  margin: 0 auto 1.5rem;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  margin-bottom: 1.25rem;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+
+.btn-back:hover {
+  background: var(--btn-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.settings-title {
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  background: linear-gradient(180deg, var(--title-1) 0%, var(--title-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.settings-subtitle {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+/* ---------- Scrollable section list ---------- */
+.settings-sections {
+  max-width: 60rem;
+  width: 100%;
+  margin: 0 auto;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-right: 0.35rem;
+}
+
+.settings-section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow: var(--panel-shadow);
+  padding: 1.5rem 1.75rem;
+}
+
+.section-heading {
+  margin-bottom: 1.25rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  color: var(--text);
+}
+
+.section-description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+/* ---------- Rounds field ---------- */
+.rounds-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stepper-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: all 0.18s ease;
+}
+
+.stepper-btn:hover:not(:disabled) {
+  background: var(--btn-hover);
+  transform: translateY(-1px);
+}
+
+.stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rounds-input {
+  width: 5rem;
+  padding: 0.6rem 0.5rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  outline: none;
+  transition: all 0.18s ease;
+}
+
+.rounds-input:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.rounds-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.rounds-input.invalid {
+  border-color: #f87171;
+}
+
+.rounds-input.invalid:focus {
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.2);
+}
+
+.update-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.1rem;
+  margin-left: 0.25rem;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: #fff;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: all 0.18s ease;
+}
+
+.update-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+}
+
+.update-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Replaces the Update button for a moment after a successful save, then fades away
+   on its own — held fully visible before easing out so it reads as a confirmation,
+   not a flicker. */
+@keyframes update-confirm-fade {
+  0% { opacity: 0; transform: translateY(-2px); }
+  12% { opacity: 1; transform: translateY(0); }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.update-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.25rem;
+  margin-left: 0.25rem;
+  color: #4ade80;
+  font-size: 0.875rem;
+  font-weight: 700;
+  animation: update-confirm-fade 2.2s ease forwards;
+}
+
+.field-error {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #f87171;
+}
+
+/* ---------- Team Size ---------- */
+.position-size-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.position-size-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.position-size-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 3rem;
+}
+
+.position-size-control {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.position-size-input {
+  width: 4rem;
+  padding: 0.6rem 0.5rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  outline: none;
+  transition: all 0.18s ease;
+}
+
+.position-size-input:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.position-size-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.position-size-input.invalid {
+  border-color: #f87171;
+}
+
+.position-size-input.invalid:focus {
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.2);
+}
+
+.position-size-error {
+  flex-basis: 100%;
+  margin: 0.3rem 0 0;
+}
+
+.team-size-actions {
+  display: flex;
+  align-items: center;
+}
+
+.team-size-actions .update-btn,
+.team-size-actions .update-confirm {
+  margin-left: 0;
+}
+
+/* ---------- Teams ---------- */
+.teams-loading {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.team-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* The cdkDrag host — everything that moves together while dragging, including the
+   order number that sits outside the visually-boxed .team-row below. */
+.team-row-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.team-order-number {
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+.team-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  transition: box-shadow 0.18s ease;
+}
+
+.team-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--text-dim);
+  cursor: grab;
+  touch-action: none;
+}
+
+.team-drag-handle:active {
+  cursor: grabbing;
+}
+
+.team-row-name {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Dragged item's floating copy, following the pointer. */
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 0.6rem;
+  box-shadow: var(--panel-shadow), 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Placeholder left behind in the list at the drop target while dragging. */
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+
+/* Every other row animates out of the way as one is dragged over it. */
+.team-list.cdk-drop-list-dragging .team-row-wrapper:not(.cdk-drag-placeholder) {
+  transition: transform 0.2s ease;
+}
+
+.team-order-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.4rem;
+  margin: -0.25rem 0 1rem;
+}
+
+.team-order-saving {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.team-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.team-delete-btn:hover {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #f87171;
+}
+
+.add-team-row {
+  display: flex;
+}
+
+.add-team-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  background: var(--surface-2);
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: all 0.18s ease;
+}
+
+.add-team-btn:hover {
+  border-color: rgba(139, 92, 246, 0.6);
+  background: rgba(139, 92, 246, 0.10);
+  color: var(--text);
+}
+
+.add-team-plus {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.add-team-form {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.add-team-input {
+  flex: 1;
+  min-width: 10rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  outline: none;
+  transition: all 0.18s ease;
+}
+
+.add-team-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.add-team-confirm-btn {
+  padding: 0.6rem 1.1rem;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  border: none;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: filter 0.18s ease;
+}
+
+.add-team-confirm-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.add-team-cancel-btn {
+  padding: 0.6rem 1.1rem;
+  background: var(--surface-1);
+  color: var(--text-dim);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.add-team-cancel-btn:hover:not(:disabled) {
+  background: var(--surface-1-hover);
+  color: var(--text);
+}
+
+.add-team-confirm-btn:disabled,
+.add-team-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---------- Delete team modal ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  width: 100%;
+  max-width: 26rem;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: var(--panel-shadow);
+}
+
+.modal-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.modal-body-text {
+  margin: 0 0 1.1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.delete-confirm-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.delete-confirm-checkbox input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: #f87171;
+  cursor: pointer;
+}
+
+.modal-error {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #f87171;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.modal-confirm-danger {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #f87171, #dc2626);
+  color: #fff;
+  border: none;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: filter 0.18s ease;
+}
+
+.modal-confirm-danger:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.modal-confirm-danger:disabled,
+.modal-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-cancel {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: var(--surface-1);
+  color: var(--text-dim);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.modal-cancel:hover:not(:disabled) {
+  background: var(--surface-1-hover);
+  color: var(--text);
+}
+
+/* ---------- Scrollbar ---------- */
+.settings-sections::-webkit-scrollbar {
+  width: 10px;
+}
+
+.settings-sections::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 999px;
+}
+
+.settings-sections::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+}
+
+.settings-sections::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .settings-title {
+    font-size: 1.9rem;
+  }
+
+  .settings-section {
+    padding: 1.25rem;
+  }
+
+  .rounds-control {
+    flex-wrap: wrap;
+  }
+
+  .update-btn {
+    margin-left: 0;
+  }
+
+  .add-team-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-team-input {
+    min-width: 0;
+  }
+
+  .position-size-row {
+    justify-content: flex-start;
+  }
+
+  .position-size-label {
+    min-width: 2.5rem;
+  }
+}

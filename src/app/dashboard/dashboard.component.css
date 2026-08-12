@@ -169,15 +169,17 @@
   border-radius: 0.85rem;
 }
 
-/* ---------- Compact "Add Team" button (shown above the board panel once teams exist) ---------- */
+/* ---------- Toolbar above the board panel (Settings link) ---------- */
 .board-panel-toolbar {
   max-width: 112rem;
   margin: 0 auto 0.75rem;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.add-team-btn-compact {
+.settings-btn-compact {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -189,19 +191,14 @@
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 600;
+  text-decoration: none;
   transition: all 0.18s ease;
 }
 
-.add-team-btn-compact:hover {
+.settings-btn-compact:hover {
   background: var(--btn-hover);
   border-color: var(--border-strong);
   transform: translateY(-1px);
-}
-
-.add-team-plus-small {
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1;
 }
 
 .board-loading {
@@ -450,6 +447,7 @@
 /* ---------- Add-player button ---------- */
 .add-player-btn {
   position: relative;
+  box-sizing: border-box;
   width: 100%;
   min-height: 3.75rem;
   height: 100%;
@@ -476,6 +474,30 @@
 
 .pick-number-empty {
   color: var(--text-faint);
+}
+
+/* Viewer-facing equivalent of .add-player-btn — same footprint, no interaction, just
+   the pick number for context (viewers can't draft, see isCommissioner() gating).
+   box-sizing must be explicit here: unlike <button> (border-box by default in the
+   browser's UA stylesheet), this is a <div>, which defaults to content-box — without
+   this, its padding was added on top of the 100% width instead of eating into it,
+   pushing the box wider than its table cell and rendering it squeezed and off-center.
+   position: relative is required too: .pick-number is position: absolute, and without
+   a positioned ancestor here it was positioning against some unrelated ancestor up the
+   tree instead of this tile, effectively rendering off-screen. */
+.empty-pick-cell {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 3.75rem;
+  height: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ---------- Edit form ---------- */
@@ -651,9 +673,9 @@
   color: var(--text);
 }
 
-/* ---------- Add-team column ---------- */
-.add-team-header {
-  min-width: 9rem;
+/* ---------- Empty state (no teams — add them from the Settings page) ---------- */
+.no-teams-header {
+  min-width: 11rem;
   padding: 0.5rem;
   background: var(--panel-2);
   border: 1px solid var(--border);
@@ -661,96 +683,37 @@
   vertical-align: middle;
 }
 
-.add-team-btn {
+.no-teams-message {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   width: 100%;
   min-height: 4rem;
   padding: 0.5rem;
-  background: var(--surface-2);
-  border: 1px dashed var(--border-strong);
-  border-radius: 0.75rem;
-  cursor: pointer;
-  color: var(--text-dim);
-  transition: all 0.18s ease;
 }
 
-.add-team-btn:hover {
-  border-color: rgba(139, 92, 246, 0.6);
-  background: rgba(139, 92, 246, 0.10);
-  color: var(--text);
-  transform: translateY(-1px);
-}
-
-.add-team-plus {
-  font-size: 1.6rem;
+.no-teams-text {
+  font-size: 0.85rem;
   font-weight: 700;
-  line-height: 1;
+  color: var(--text-dim);
 }
 
-.add-team-label {
+.no-teams-link {
   font-size: 0.8rem;
   font-weight: 700;
+  color: #8b5cf6;
+  text-decoration: none;
 }
 
-.add-team-cell {
-  min-width: 9rem;
+.no-teams-link:hover {
+  text-decoration: underline;
+}
+
+.no-teams-cell {
+  min-width: 11rem;
   padding: 0;
-}
-
-/* ---------- Modal ---------- */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
-}
-
-.modal {
-  width: 100%;
-  max-width: 24rem;
-  background: var(--panel);
-  border: 1px solid var(--border-strong);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: var(--panel-shadow);
-}
-
-.modal-title {
-  margin: 0 0 1rem;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.modal-input {
-  width: 100%;
-  padding: 0.7rem 0.9rem;
-  background: var(--input-bg);
-  border: 1px solid var(--border-strong);
-  border-radius: 0.6rem;
-  font-size: 0.9rem;
-  color: var(--text);
-  outline: none;
-  box-sizing: border-box;
-  transition: all 0.18s ease;
-}
-
-.modal-input::placeholder {
-  color: var(--text-faint);
-}
-
-.modal-input:focus {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
 .cell-error {
@@ -759,60 +722,6 @@
   font-weight: 600;
   color: #f87171;
   text-align: center;
-}
-
-.modal-error {
-  margin: 0.6rem 0 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #f87171;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 0.6rem;
-  margin-top: 1.25rem;
-}
-
-.modal-confirm {
-  flex: 1;
-  padding: 0.6rem 1rem;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-  color: #fff;
-  border: none;
-  border-radius: 0.6rem;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 700;
-  transition: filter 0.18s ease;
-}
-
-.modal-confirm:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-
-.modal-confirm:disabled,
-.modal-cancel:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.modal-cancel {
-  flex: 1;
-  padding: 0.6rem 1rem;
-  background: var(--surface-1);
-  color: var(--text-dim);
-  border: 1px solid var(--border-strong);
-  border-radius: 0.6rem;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
-  transition: all 0.18s ease;
-}
-
-.modal-cancel:hover:not(:disabled) {
-  background: var(--surface-1-hover);
-  color: var(--text);
 }
 
 /* ---------- Scrollbar ---------- */

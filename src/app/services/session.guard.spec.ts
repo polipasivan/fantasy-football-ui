@@ -7,6 +7,7 @@ import { SessionService } from './session.service';
 describe('sessionGuard', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     TestBed.configureTestingModule({
       providers: [provideRouter([])]
     });
@@ -14,6 +15,7 @@ describe('sessionGuard', () => {
 
   afterEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   it('allows navigation when a session is active', () => {

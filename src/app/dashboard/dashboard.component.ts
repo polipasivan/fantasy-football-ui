@@ -8,8 +8,10 @@ import { PlayerService, Player } from '../services/player.service';
 import { ThemeService } from '../services/theme.service';
 import { SessionService } from '../services/session.service';
 import { DraftApiService, DraftPlayer, DraftBoardResponse } from '../services/draft-api.service';
+import { DraftSettings, SettingsApiService } from '../services/settings-api.service';
 import { TeamRosterModalComponent } from '../team-roster/team-roster-modal.component';
 import { RosterBreakdown, buildRosterBreakdown, hasOpenRosterSlot as hasOpenSlotInBreakdown } from '../team-roster/roster';
+import { DEFAULT_POSITION_COUNTS, RosterConfig, STANDARD_ROSTER, toRosterConfig } from '../team-roster/roster-config';
 
 interface DraftData {
   [key: string]: string;
@@ -32,7 +34,7 @@ interface ExportEntry {
 
 
 export class DashboardComponent implements OnInit {
-  // Teams start empty — teams are added via the "Add Team" column.
+  // Teams start empty — teams are managed from the Settings page (Teams section).
   teams: string[] = [];
 
   rounds: number = 15;
@@ -46,12 +48,18 @@ export class DashboardComponent implements OnInit {
   // Per-team roster breakdown (starters + bench), kept in sync with draftData.
   teamRosters: Record<string, RosterBreakdown> = {};
 
+  // Starter-slot counts per position (Team Size), fed by getSettings. Defaults to the
+  // same shape STANDARD_ROSTER always used, so nothing changes for a session until
+  // the commissioner actually customizes Team Size on the Settings page.
+  private rosterConfig: RosterConfig = STANDARD_ROSTER;
+
   // Team roster modal state
   selectedRosterTeam: string | null = null;
 
-  // Loading state — the board table stays hidden behind a spinner until both loads settle.
+  // Loading state — the board table stays hidden behind a spinner until all loads settle.
   playersLoaded: boolean = false;
   boardLoaded: boolean = false;
+  settingsLoaded: boolean = false;
 
   // How often other viewers' boards poll the backend for changes made by the commissioner.
   private readonly pollIntervalMs = 4000;
@@ -59,12 +67,13 @@ export class DashboardComponent implements OnInit {
   // Cell keys with a player write currently in flight. A poll tick landing mid-write (or
   // before a failed write has rolled back) must not clobber that optimistic local state
   // with the stale server response — this set tells applyDraftBoard() what to leave alone.
-  // (Team adds don't need the same guard: confirmAddTeam only mutates `teams` after the
-  // server confirms, so there's no optimistic state for a poll to race against.)
+  // (Teams don't need the same guard: they're only added/removed from the Settings page,
+  // which mutates `teams` after the server confirms, so there's no optimistic state on
+  // this dashboard for a poll to race against.)
   private pendingCellWrites = new Set<string>();
 
   isLoading(): boolean {
-    return !this.playersLoaded || !this.boardLoaded;
+    return !this.playersLoaded || !this.boardLoaded || !this.settingsLoaded;
   }
 
   // Autocomplete properties
@@ -73,16 +82,11 @@ export class DashboardComponent implements OnInit {
   showSuggestions: boolean = false;
   selectedSuggestionIndex: number = -1;
 
-  // Add-team modal state
-  showAddTeamModal: boolean = false;
-  newTeamName: string = '';
-  addingTeam: boolean = false;
-  addTeamError: string = '';
-
   constructor(
     private playerService: PlayerService,
     public theme: ThemeService,
     private draftApi: DraftApiService,
+    private settingsApi: SettingsApiService,
     private sessionService: SessionService,
     private router: Router,
     private destroyRef: DestroyRef
@@ -90,14 +94,52 @@ export class DashboardComponent implements OnInit {
 
   leaveDraft(): void {
     this.sessionService.clearSession();
+    this.sessionService.clearCommissionerPassword();
     this.router.navigateByUrl('/login');
   }
 
+  // Gates the Settings link and the add/remove-player controls in the template. The
+  // underlying write endpoints re-check the password themselves regardless (see
+  // lambda/models/commissioner.js) — this only controls what's shown/clickable here.
+  isCommissioner(): boolean {
+    return this.sessionService.isCommissioner();
+  }
+
   ngOnInit(): void {
-    this.roundNumbers = Array.from({ length: this.rounds }, (_, i) => i + 1);
     this.loadPlayers();
     this.loadDraftBoard();
+    this.loadSettings();
     this.startPolling();
+  }
+
+  // Loaded once on init — deliberately not polled (see SettingsApiService). If the
+  // commissioner changes a setting mid-draft, other open tabs only pick it up on
+  // their next page load.
+  loadSettings(): void {
+    this.settingsApi.getSettings().subscribe({
+      next: (settings) => {
+        this.applySettings(settings);
+        this.settingsLoaded = true;
+      },
+      error: (err) => {
+        console.error('Failed to load settings', err);
+        // Fall back to the existing defaults so the board still renders.
+        this.applySettings({ rounds: this.rounds, ...DEFAULT_POSITION_COUNTS });
+        this.settingsLoaded = true;
+      }
+    });
+  }
+
+  // Rebuilds the round rows and roster config, then re-derives every team's roster
+  // breakdown against both. Needed on its own (not just from ngOnInit) because
+  // loadSettings and loadDraftBoard fire in parallel — whichever settles second must
+  // re-run this so team rosters reflect the correct round count and Team Size either
+  // way.
+  private applySettings(settings: Pick<DraftSettings, 'rounds' | 'qb' | 'rb' | 'wr' | 'te' | 'dst' | 'k'>): void {
+    this.rounds = settings.rounds;
+    this.roundNumbers = Array.from({ length: this.rounds }, (_, i) => i + 1);
+    this.rosterConfig = toRosterConfig(settings);
+    this.refreshAllRosters();
   }
 
   loadPlayers(): void {
@@ -183,7 +225,7 @@ export class DashboardComponent implements OnInit {
   }
 
   private refreshTeamRoster(team: string): void {
-    this.teamRosters[team] = buildRosterBreakdown(this.getTeamPicks(team));
+    this.teamRosters[team] = buildRosterBreakdown(this.getTeamPicks(team), this.rosterConfig);
   }
 
   private refreshAllRosters(): void {
@@ -202,54 +244,6 @@ export class DashboardComponent implements OnInit {
 
   closeTeamRoster(): void {
     this.selectedRosterTeam = null;
-  }
-
-  // ---------- Add-team modal ----------
-
-  openAddTeamModal(): void {
-    this.showAddTeamModal = true;
-    this.newTeamName = '';
-    this.addTeamError = '';
-    this.addingTeam = false;
-  }
-
-  closeAddTeamModal(): void {
-    if (this.addingTeam) return;
-    this.showAddTeamModal = false;
-    this.newTeamName = '';
-    this.addTeamError = '';
-  }
-
-  confirmAddTeam(): void {
-    const name = this.newTeamName.trim();
-    if (!name) {
-      this.addTeamError = 'Please enter a team name.';
-      return;
-    }
-    if (this.teams.includes(name)) {
-      this.addTeamError = 'That team is already on the board.';
-      return;
-    }
-
-    this.addingTeam = true;
-    this.addTeamError = '';
-
-    this.draftApi.addTeam(name).subscribe({
-      next: (team) => {
-        const teamName = team?.teamName ?? name;
-        this.teams.push(teamName);
-        this.refreshTeamRoster(teamName);
-        this.addingTeam = false;
-        this.showAddTeamModal = false;
-        this.newTeamName = '';
-      },
-      error: (err) => {
-        this.addingTeam = false;
-        this.addTeamError = err?.status === 409
-          ? 'A team with that name already exists.'
-          : 'Failed to add team. Please try again.';
-      }
-    });
   }
 
   getCellKey(team: string, round: number): string {
@@ -311,6 +305,7 @@ export class DashboardComponent implements OnInit {
   }
 
   startEditing(team: string, round: number): void {
+    if (!this.isCommissioner()) return;
     this.editingCell = this.getCellKey(team, round);
     this.playerName = '';
     this.showSuggestions = false;
@@ -376,6 +371,8 @@ export class DashboardComponent implements OnInit {
   }
 
   addPlayer(team: string, round: number): void {
+    if (!this.isCommissioner()) return;
+
     const trimmedName = this.playerName.trim();
     if (!trimmedName) return;
 
@@ -423,14 +420,16 @@ export class DashboardComponent implements OnInit {
         delete this.draftData[key];
         this.refreshTeamRoster(team);
         this.pendingCellWrites.delete(key);
-        alert(err?.status === 404
+        alert(this.writeErrorMessage(err, err?.status === 404
           ? 'That team was not found on the server.'
-          : 'Failed to save the pick. Please try again.');
+          : 'Failed to save the pick. Please try again.'));
       }
     });
   }
 
   removePlayer(team: string, round: number): void {
+    if (!this.isCommissioner()) return;
+
     const key = this.getCellKey(team, round);
     const previous = this.draftData[key];
 
@@ -452,9 +451,19 @@ export class DashboardComponent implements OnInit {
         }
         this.pendingCellWrites.delete(key);
         console.error('Failed to delete player', err);
-        alert('Failed to remove the player. Please try again.');
+        alert(this.writeErrorMessage(err, 'Failed to remove the player. Please try again.'));
       }
     });
+  }
+
+  // A 403 from any write endpoint means the commissioner password held in
+  // sessionStorage was wrong (or one is now required and none was held) — surfaced
+  // distinctly from other failures so it's clear the change was rejected, not lost to
+  // a network blip.
+  private writeErrorMessage(err: any, fallback: string): string {
+    return err?.status === 403
+      ? 'Incorrect commissioner password. Your change was not saved.'
+      : fallback;
   }
 
   cancelEditing(): void {

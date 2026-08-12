@@ -3,15 +3,64 @@ export interface RosterConfig {
   bench: number;
 }
 
-// Static for now — later a Settings tab can swap this out for a user-configured RosterConfig.
-export const STANDARD_ROSTER: RosterConfig = {
-  starters: [
-    { position: 'QB', count: 1 },
-    { position: 'RB', count: 2 },
-    { position: 'WR', count: 2 },
-    { position: 'TE', count: 1 },
-    { position: 'DST', count: 1 },
-    { position: 'K', count: 1 },
-  ],
-  bench: 7,
-};
+/** Starter-slot counts per position — the shape a getSettings/setSettings response carries. */
+export interface PositionCounts {
+  qb: number;
+  rb: number;
+  wr: number;
+  te: number;
+  dst: number;
+  k: number;
+}
+
+// Matches DEFAULT_POSITION_COUNTS in lambda/models/settings.js — a session that's
+// never customized Team Size behaves exactly as every session did before this
+// feature existed.
+export const DEFAULT_POSITION_COUNTS: PositionCounts = { qb: 1, rb: 2, wr: 2, te: 1, dst: 1, k: 1 };
+
+// Bench size isn't part of Team Size — it's not editable on the Settings page and
+// isn't persisted — so it's always this fixed value regardless of position
+// customization.
+const DEFAULT_BENCH = 7;
+
+// Order here drives starter-group render order in the roster modal — matches the
+// Team Size section's field order and the app's position legend (QB, RB, WR, TE,
+// DEF, K). `dst` is the internal key for the DEF/ST position (see roster.ts /
+// lambda/models/settings.js) even though the label shown to users is "DEF".
+const STARTER_POSITIONS: { position: string; countKey: keyof PositionCounts }[] = [
+  { position: 'QB', countKey: 'qb' },
+  { position: 'RB', countKey: 'rb' },
+  { position: 'WR', countKey: 'wr' },
+  { position: 'TE', countKey: 'te' },
+  { position: 'DST', countKey: 'dst' },
+  { position: 'K', countKey: 'k' },
+];
+
+/**
+ * Turns the Team Size fields from a getSettings/setSettings response into the
+ * RosterConfig shape buildRosterBreakdown (roster.ts) uses. A position with a count
+ * of 0 still appears in `starters` with an empty `slots` array once built — callers
+ * that render starter groups (the roster modal) filter those out rather than this
+ * function omitting them, so the mapping here stays a straightforward 1:1.
+ *
+ * Accepts `Partial<PositionCounts>` and falls back to `DEFAULT_POSITION_COUNTS` field
+ * by field for anything missing — the real getSettings endpoint always sends all six
+ * (see `withSettingsDefaults` in lambda/models/settings.js), but staying defensive
+ * here means a missing field degrades to the old fixed roster shape for that one
+ * position rather than `new Array(undefined)` silently producing a 1-slot array.
+ */
+export function toRosterConfig(counts: Partial<PositionCounts>): RosterConfig {
+  return {
+    starters: STARTER_POSITIONS.map(({ position, countKey }) => ({
+      position,
+      count: counts[countKey] ?? DEFAULT_POSITION_COUNTS[countKey],
+    })),
+    bench: DEFAULT_BENCH,
+  };
+}
+
+// The roster shape used before Settings has loaded (or if it fails to load) — the
+// same defaults DEFAULT_POSITION_COUNTS describes, so nothing behaves differently
+// from before this feature existed until the commissioner actually customizes Team
+// Size for a session.
+export const STANDARD_ROSTER: RosterConfig = toRosterConfig(DEFAULT_POSITION_COUNTS);

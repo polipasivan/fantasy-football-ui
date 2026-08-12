@@ -61,11 +61,14 @@
     </div>
   </div>
 
-  <div class="board-panel-toolbar" *ngIf="teams.length > 0">
-    <button class="add-team-btn-compact" type="button" (click)="openAddTeamModal()" aria-label="Add team">
-      <span class="add-team-plus-small">+</span>
-      <span>Add Team</span>
-    </button>
+  <div class="board-panel-toolbar" *ngIf="isCommissioner()">
+    <a routerLink="/settings" class="settings-btn-compact" aria-label="Settings">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+      <span>Settings</span>
+    </a>
   </div>
 
   <div class="board-panel">
@@ -84,11 +87,11 @@
                 <div class="team-name">{{ team }}</div>
               </div>
             </th>
-            <th class="add-team-header" *ngIf="teams.length === 0">
-              <button class="add-team-btn" type="button" (click)="openAddTeamModal()" aria-label="Add team">
-                <span class="add-team-plus">+</span>
-                <span class="add-team-label">Add Team</span>
-              </button>
+            <th class="no-teams-header" *ngIf="teams.length === 0">
+              <div class="no-teams-message">
+                <span class="no-teams-text">No teams yet</span>
+                <a *ngIf="isCommissioner()" routerLink="/settings" class="no-teams-link">Add a team in Settings</a>
+              </div>
             </th>
           </tr>
         </thead>
@@ -110,7 +113,7 @@
                   <span class="pos-badge">{{ getPlayerPosition(team, round) }}</span>
                   <span class="nfl-team">{{ getPlayerTeam(team, round) }}</span>
                 </div>
-                <button class="remove-btn" (click)="removePlayer(team, round)" aria-label="Remove player">
+                <button *ngIf="isCommissioner()" class="remove-btn" (click)="removePlayer(team, round)" aria-label="Remove player">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -166,7 +169,7 @@
                 </div>
               </div>
 
-              <button *ngIf="!getPlayer(team, round) && !isEditing(team, round)"
+              <button *ngIf="!getPlayer(team, round) && !isEditing(team, round) && isCommissioner()"
                       class="add-player-btn"
                       (click)="startEditing(team, round)">
                 <span class="pick-number pick-number-empty">{{ getPickNumber(ti, round) }}</span>
@@ -176,33 +179,16 @@
                 </svg>
                 <span>Add Player</span>
               </button>
+
+              <div *ngIf="!getPlayer(team, round) && !isEditing(team, round) && !isCommissioner()"
+                   class="empty-pick-cell">
+                <span class="pick-number pick-number-empty">{{ getPickNumber(ti, round) }}</span>
+              </div>
             </td>
-            <td class="add-team-cell" *ngIf="teams.length === 0"></td>
+            <td class="no-teams-cell" *ngIf="teams.length === 0"></td>
           </tr>
         </tbody>
       </table>
-    </div>
-  </div>
-
-  <!-- Add Team modal -->
-  <div class="modal-overlay" *ngIf="showAddTeamModal" (click)="closeAddTeamModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <h2 class="modal-title">Add Team</h2>
-      <input
-        type="text"
-        class="modal-input"
-        [(ngModel)]="newTeamName"
-        (keyup.enter)="confirmAddTeam()"
-        placeholder="Team name"
-        autofocus
-      />
-      <p class="modal-error" *ngIf="addTeamError">{{ addTeamError }}</p>
-      <div class="modal-actions">
-        <button class="modal-confirm" (click)="confirmAddTeam()" [disabled]="addingTeam">
-          {{ addingTeam ? 'Adding…' : 'Confirm' }}
-        </button>
-        <button class="modal-cancel" (click)="closeAddTeamModal()" [disabled]="addingTeam">Cancel</button>
-      </div>
     </div>
   </div>
 

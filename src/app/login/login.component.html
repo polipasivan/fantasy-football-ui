@@ -34,11 +34,17 @@
       id="commissionerPassword"
       type="password"
       class="login-input"
+      [class.login-input-error]="!!passwordError"
       [(ngModel)]="commissionerPassword"
+      (ngModelChange)="onPasswordInput()"
+      (keyup.enter)="enterDraft()"
       name="commissionerPassword"
       placeholder="Commissioner password"
     />
+    <p class="login-error" *ngIf="passwordError">{{ passwordError }}</p>
 
-    <button class="login-enter-btn" type="button" (click)="enterDraft()">Enter Draft</button>
+    <button class="login-enter-btn" type="button" [disabled]="verifying" (click)="enterDraft()">
+      {{ verifying ? 'Verifying…' : 'Enter Draft' }}
+    </button>
   </div>
 </div>

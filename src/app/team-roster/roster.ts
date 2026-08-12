@@ -1,5 +1,5 @@
 import { DraftPlayer } from '../services/draft-api.service';
-import { STANDARD_ROSTER } from './roster-config';
+import { RosterConfig, STANDARD_ROSTER } from './roster-config';
 
 export type RosterSlot = DraftPlayer | null;
 
@@ -10,12 +10,16 @@ export interface RosterBreakdown {
   overflow: DraftPlayer[];
 }
 
-export function buildRosterBreakdown(picks: DraftPlayer[]): RosterBreakdown {
-  const starters = STANDARD_ROSTER.starters.map(s => ({
+// `config` defaults to STANDARD_ROSTER so any existing caller that doesn't pass one
+// (or a test that doesn't care about Team Size) keeps working unchanged. Callers that
+// know the session's actual Team Size (dashboard.component.ts, via
+// team-roster/roster-config.ts's toRosterConfig) pass it explicitly.
+export function buildRosterBreakdown(picks: DraftPlayer[], config: RosterConfig = STANDARD_ROSTER): RosterBreakdown {
+  const starters = config.starters.map(s => ({
     position: s.position,
     slots: new Array<RosterSlot>(s.count).fill(null),
   }));
-  const bench = new Array<RosterSlot>(STANDARD_ROSTER.bench).fill(null);
+  const bench = new Array<RosterSlot>(config.bench).fill(null);
   const overflow: DraftPlayer[] = [];
 
   for (const pick of picks) {

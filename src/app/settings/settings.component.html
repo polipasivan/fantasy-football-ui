@@ -1,0 +1,235 @@
+<div class="container">
+  <div class="settings-header">
+    <a routerLink="/" class="btn-back" aria-label="Back to draft board">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Back to Draft
+    </a>
+
+    <h1 class="settings-title">Settings</h1>
+    <p class="settings-subtitle">Manage this draft session</p>
+  </div>
+
+  <div class="settings-sections">
+    <section class="settings-section">
+      <div class="section-heading">
+        <h2 class="section-title">Draft Rounds</h2>
+        <p class="section-description">How many rounds each team drafts.</p>
+      </div>
+
+      <div class="section-body">
+        <div class="rounds-control">
+          <button
+            type="button"
+            class="stepper-btn"
+            (click)="decrementRounds()"
+            [disabled]="rounds <= 1"
+            aria-label="Decrease rounds">
+            &minus;
+          </button>
+          <input
+            type="text"
+            inputmode="numeric"
+            class="rounds-input"
+            [class.invalid]="!!roundsError"
+            [ngModel]="roundsInputValue"
+            (ngModelChange)="onRoundsInput($event)"
+            aria-label="Number of rounds"
+          />
+          <button
+            type="button"
+            class="stepper-btn"
+            (click)="incrementRounds()"
+            aria-label="Increase rounds">
+            +
+          </button>
+
+          <button
+            *ngIf="roundsDirty"
+            type="button"
+            class="update-btn"
+            [disabled]="saving"
+            (click)="updateRounds()">
+            {{ saving ? 'Saving…' : 'Update' }}
+          </button>
+
+          <span *ngIf="showSavedConfirm && !roundsDirty" class="update-confirm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Confirmed
+          </span>
+        </div>
+        <p class="field-error" *ngIf="roundsError">{{ roundsError }}</p>
+        <p class="field-error" *ngIf="saveError">{{ saveError }}</p>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <div class="section-heading">
+        <h2 class="section-title">Team Size</h2>
+        <p class="section-description">How many starting roster slots each team has per position.</p>
+      </div>
+
+      <div class="section-body">
+        <div class="position-size-list">
+          <div class="position-size-row" *ngFor="let field of positionFields">
+            <span class="position-size-label">{{ field.label }}</span>
+            <div class="position-size-control">
+              <button
+                type="button"
+                class="stepper-btn"
+                (click)="decrementPositionCount(field)"
+                [disabled]="field.count <= 0"
+                [attr.aria-label]="'Decrease ' + field.label + ' slots'">
+                &minus;
+              </button>
+              <input
+                type="text"
+                inputmode="numeric"
+                class="position-size-input"
+                [class.invalid]="!!field.error"
+                [ngModel]="field.inputValue"
+                (ngModelChange)="onPositionCountInput(field, $event)"
+                [attr.aria-label]="'Number of ' + field.label + ' slots'"
+              />
+              <button
+                type="button"
+                class="stepper-btn"
+                (click)="incrementPositionCount(field)"
+                [attr.aria-label]="'Increase ' + field.label + ' slots'">
+                +
+              </button>
+            </div>
+            <p class="field-error position-size-error" *ngIf="field.error">{{ field.error }}</p>
+          </div>
+        </div>
+
+        <div class="team-size-actions">
+          <button
+            *ngIf="teamSizeDirty"
+            type="button"
+            class="update-btn"
+            [disabled]="savingTeamSize"
+            (click)="updateTeamSize()">
+            {{ savingTeamSize ? 'Saving…' : 'Update' }}
+          </button>
+
+          <span *ngIf="showTeamSizeSavedConfirm && !teamSizeDirty" class="update-confirm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Confirmed
+          </span>
+        </div>
+        <p class="field-error" *ngIf="teamSizeSaveError">{{ teamSizeSaveError }}</p>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <div class="section-heading">
+        <h2 class="section-title">Teams</h2>
+        <p class="section-description">Add or remove teams from this draft.</p>
+      </div>
+
+      <div class="section-body">
+        <div class="teams-loading" *ngIf="teamsLoading">
+          <span class="spinner"></span>
+        </div>
+
+        <ul class="team-list" *ngIf="!teamsLoading && teams.length > 0" cdkDropList (cdkDropListDropped)="onTeamDrop($event)">
+          <li class="team-row-wrapper" *ngFor="let team of teams; let i = index" cdkDrag [cdkDragDisabled]="reorderingTeams">
+            <span class="team-order-number" aria-hidden="true">{{ i + 1 }}</span>
+            <div class="team-row">
+              <span class="team-drag-handle" cdkDragHandle aria-label="Drag to reorder">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="9" cy="6" r="1"></circle>
+                  <circle cx="9" cy="12" r="1"></circle>
+                  <circle cx="9" cy="18" r="1"></circle>
+                  <circle cx="15" cy="6" r="1"></circle>
+                  <circle cx="15" cy="12" r="1"></circle>
+                  <circle cx="15" cy="18" r="1"></circle>
+                </svg>
+              </span>
+              <span class="team-row-name">{{ team }}</span>
+              <button
+                type="button"
+                class="team-delete-btn"
+                (click)="openDeleteConfirm(team)"
+                [attr.aria-label]="'Delete ' + team">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </button>
+            </div>
+          </li>
+        </ul>
+
+        <div class="team-order-status" *ngIf="!teamsLoading && teams.length > 0">
+          <span *ngIf="reorderingTeams" class="team-order-saving">Saving order…</span>
+          <span *ngIf="showTeamOrderSavedConfirm && !reorderingTeams" class="update-confirm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Confirmed
+          </span>
+          <p class="field-error" *ngIf="teamOrderError">{{ teamOrderError }}</p>
+        </div>
+
+        <div class="add-team-row" *ngIf="!showAddTeamForm">
+          <button type="button" class="add-team-btn" (click)="openAddTeamForm()">
+            <span class="add-team-plus">+</span>
+            <span>Add Team</span>
+          </button>
+        </div>
+
+        <div class="add-team-form" *ngIf="showAddTeamForm">
+          <input
+            type="text"
+            class="add-team-input"
+            [(ngModel)]="newTeamName"
+            (keyup.enter)="confirmAddTeam()"
+            placeholder="Team name"
+            autofocus
+          />
+          <button type="button" class="add-team-confirm-btn" [disabled]="addingTeam" (click)="confirmAddTeam()">
+            {{ addingTeam ? 'Adding…' : 'Confirm' }}
+          </button>
+          <button type="button" class="add-team-cancel-btn" [disabled]="addingTeam" (click)="cancelAddTeamForm()">
+            Cancel
+          </button>
+        </div>
+        <p class="field-error" *ngIf="addTeamError">{{ addTeamError }}</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Delete team confirmation modal -->
+  <div class="modal-overlay" *ngIf="teamPendingDelete" (click)="closeDeleteConfirm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Delete Team?</h2>
+      <p class="modal-body-text">
+        Are you sure you want to delete <strong>{{ teamPendingDelete }}</strong>?
+        Deleting this team will delete all information pertaining to the team.
+      </p>
+      <label class="delete-confirm-checkbox">
+        <input type="checkbox" [(ngModel)]="deleteConfirmChecked" [disabled]="deletingTeam" />
+        <span>I understand this cannot be undone</span>
+      </label>
+      <p class="modal-error" *ngIf="deleteTeamError">{{ deleteTeamError }}</p>
+      <div class="modal-actions">
+        <button
+          class="modal-confirm modal-confirm-danger"
+          [disabled]="!deleteConfirmChecked || deletingTeam"
+          (click)="confirmDeleteTeam()">
+          {{ deletingTeam ? 'Deleting…' : 'Delete Team' }}
+        </button>
+        <button class="modal-cancel" [disabled]="deletingTeam" (click)="closeDeleteConfirm()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
