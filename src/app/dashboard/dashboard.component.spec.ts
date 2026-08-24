@@ -251,20 +251,20 @@ describe('DashboardComponent', () => {
 
     TestBed.inject(SessionService).setCommissionerPassword('fambam123');
 
-    // 2 RB starter slots + 7 bench slots = 9 RB picks fills every spot an RB can occupy.
-    const rbNames = Array.from({ length: 9 }, (_, i) => `RB ${i + 1}`);
-    component.allPlayers = [...rbNames.map(n => makePlayer(n, 'RB')), makePlayer('RB 10', 'RB')];
+    // 2 RB starter slots + 8 bench slots = 10 RB picks fills every spot an RB can occupy.
+    const rbNames = Array.from({ length: 10 }, (_, i) => `RB ${i + 1}`);
+    component.allPlayers = [...rbNames.map(n => makePlayer(n, 'RB')), makePlayer('RB 11', 'RB')];
     component.teams = ['Team A'];
     rbNames.forEach((name, i) => {
       component.draftData[component.getCellKey('Team A', i + 1)] = name;
     });
     (component as any).refreshAllRosters();
 
-    component.editingCell = component.getCellKey('Team A', 10);
-    component.playerName = 'RB 10';
-    component.addPlayer('Team A', 10);
+    component.editingCell = component.getCellKey('Team A', 11);
+    component.playerName = 'RB 11';
+    component.addPlayer('Team A', 11);
 
-    expect(component.draftData[component.getCellKey('Team A', 10)]).toBeUndefined();
+    expect(component.draftData[component.getCellKey('Team A', 11)]).toBeUndefined();
     expect(component.rosterError).toContain('Team A');
     httpMock.expectNone(req => req.url.includes('addPlayer'));
   });
@@ -399,5 +399,114 @@ describe('DashboardComponent', () => {
 
     expect(component.draftData[component.getCellKey('Team A', 1)]).toBeUndefined();
     expect(window.alert).toHaveBeenCalledWith('Incorrect commissioner password. Your change was not saved.');
+  });
+
+  // ---------- Draft Mode ----------
+
+  it('starts with Draft Mode off', () => {
+    httpMock.expectOne(req => req.url.includes('.csv')).flush('');
+    httpMock.expectOne(req => req.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+    httpMock.expectOne(req => req.url.includes('getSettings')).flush({ sessionId: '1234', rounds: 15 });
+
+    expect(component.draftMode).toBeFalse();
+  });
+
+  it('toggles Draft Mode on and off, applying the draft-mode class to the container', () => {
+    httpMock.expectOne(req => req.url.includes('.csv')).flush('');
+    httpMock.expectOne(req => req.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+    httpMock.expectOne(req => req.url.includes('getSettings')).flush({ sessionId: '1234', rounds: 15 });
+    fixture.detectChanges();
+
+    component.toggleDraftMode();
+    fixture.detectChanges();
+    expect(component.draftMode).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.container.draft-mode')).toBeTruthy();
+
+    component.toggleDraftMode();
+    fixture.detectChanges();
+    expect(component.draftMode).toBeFalse();
+    expect(fixture.nativeElement.querySelector('.container.draft-mode')).toBeNull();
+  });
+
+  it('exits Draft Mode on Escape, and does nothing on Escape when already off', () => {
+    httpMock.expectOne(req => req.url.includes('.csv')).flush('');
+    httpMock.expectOne(req => req.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+    httpMock.expectOne(req => req.url.includes('getSettings')).flush({ sessionId: '1234', rounds: 15 });
+
+    component.onEscapeKey();
+    expect(component.draftMode).toBeFalse(); // no-op while already off
+
+    component.toggleDraftMode();
+    expect(component.draftMode).toBeTrue();
+
+    component.onEscapeKey();
+    expect(component.draftMode).toBeFalse();
+  });
+
+  it('shows the Draft Mode button for both a viewer and a commissioner, docked after the (possibly absent) Settings link', () => {
+    httpMock.expectOne(req => req.url.includes('.csv')).flush('');
+    httpMock.expectOne(req => req.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+    httpMock.expectOne(req => req.url.includes('getSettings')).flush({ sessionId: '1234', rounds: 15 });
+    fixture.detectChanges();
+
+    const btn: HTMLButtonElement = fixture.nativeElement.querySelector('.draft-mode-btn');
+    expect(btn).toBeTruthy();
+    expect(btn.textContent?.trim()).toBe('Draft Mode');
+
+    btn.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.draft-mode-btn').textContent?.trim()).toBe('Exit Draft Mode');
+  });
+
+  // ---------- Round row highlight ----------
+
+  it('starts with no round selected', () => {
+    httpMock.expectOne(req => req.url.includes('.csv')).flush('');
+    httpMock.expectOne(req => req.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+    httpMock.expectOne(req => req.url.includes('getSettings')).flush({ sessionId: '1234', rounds: 15 });
+
+    expect(component.selectedRound).toBeNull();
+  });
+
+  it('toggles a round selected, then back off on a second click', () => {
+    httpMock.expectOne(req => req.url.includes('.csv')).flush('');
+    httpMock.expectOne(req => req.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+    httpMock.expectOne(req => req.url.includes('getSettings')).flush({ sessionId: '1234', rounds: 15 });
+
+    component.toggleRoundSelection(3);
+    expect(component.selectedRound).toBe(3);
+
+    component.toggleRoundSelection(3);
+    expect(component.selectedRound).toBeNull();
+  });
+
+  it('moves the selection to a different round rather than stacking multiple', () => {
+    httpMock.expectOne(req => req.url.includes('.csv')).flush('');
+    httpMock.expectOne(req => req.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+    httpMock.expectOne(req => req.url.includes('getSettings')).flush({ sessionId: '1234', rounds: 15 });
+
+    component.toggleRoundSelection(2);
+    component.toggleRoundSelection(5);
+    expect(component.selectedRound).toBe(5);
+  });
+
+  it('applies row-enlarged to the clicked round\'s row only, via the round chip', () => {
+    httpMock.expectOne(req => req.url.includes('.csv')).flush('');
+    httpMock.expectOne(req => req.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+    httpMock.expectOne(req => req.url.includes('getSettings')).flush({ sessionId: '1234', rounds: 3 });
+    fixture.detectChanges();
+
+    const rows: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.table-row'));
+    expect(rows.length).toBe(3);
+    expect(rows.some(r => r.classList.contains('row-enlarged'))).toBeFalse();
+
+    const secondRoundChip: HTMLElement = rows[1].querySelector('.round-chip')!;
+    secondRoundChip.click();
+    fixture.detectChanges();
+
+    expect(rows[0].classList.contains('row-enlarged')).toBeFalse();
+    expect(rows[1].classList.contains('row-enlarged')).toBeTrue();
+    expect(rows[2].classList.contains('row-enlarged')).toBeFalse();
+    expect(secondRoundChip.getAttribute('aria-pressed')).toBe('true');
   });
 });

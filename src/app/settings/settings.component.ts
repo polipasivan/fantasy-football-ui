@@ -7,7 +7,7 @@ import { forkJoin } from 'rxjs';
 import { DraftSettings, SettingsApiService, SettingsUpdate } from '../services/settings-api.service';
 import { DraftApiService } from '../services/draft-api.service';
 
-type PositionKey = 'qb' | 'rb' | 'wr' | 'te' | 'dst' | 'k';
+type PositionKey = 'qb' | 'rb' | 'wr' | 'te' | 'dst' | 'k' | 'bench';
 
 interface PositionSizeField {
   key: PositionKey;
@@ -20,15 +20,19 @@ interface PositionSizeField {
   error: string | null;
 }
 
+// Order here drives the Team Size section's stepper render order (positionFields
+// below is built straight from Object.keys) — BENCH goes last, after K.
 const POSITION_LABELS: Record<PositionKey, string> = {
-  qb: 'QB', rb: 'RB', wr: 'WR', te: 'TE', dst: 'DEF', k: 'K'
+  qb: 'QB', rb: 'RB', wr: 'WR', te: 'TE', dst: 'DEF', k: 'K', bench: 'BENCH'
 };
 
 // Matches DEFAULT_POSITION_COUNTS in lambda/models/settings.js — a session that's
 // never customized Team Size behaves exactly as every session did before this
-// feature existed (see team-roster/roster-config.ts's STANDARD_ROSTER).
+// feature existed (see team-roster/roster-config.ts's STANDARD_ROSTER). `bench`
+// isn't a player position, but is a Team Size field edited via the exact same
+// generic stepper/save mechanism as the six above.
 const DEFAULT_POSITION_COUNTS: Record<PositionKey, number> = {
-  qb: 1, rb: 2, wr: 2, te: 1, dst: 1, k: 1
+  qb: 1, rb: 2, wr: 2, te: 1, dst: 1, k: 1, bench: 8
 };
 
 @Component({

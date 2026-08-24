@@ -11,7 +11,7 @@ describe('SettingsApiService', () => {
   let httpMock: HttpTestingController;
 
   const fullSettings: DraftSettings = {
-    sessionId: '1234', rounds: 12, qb: 1, rb: 2, wr: 2, te: 1, dst: 1, k: 1
+    sessionId: '1234', rounds: 12, qb: 1, rb: 2, wr: 2, te: 1, dst: 1, k: 1, bench: 8
   };
 
   beforeEach(() => {

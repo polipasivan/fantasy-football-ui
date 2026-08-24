@@ -201,6 +201,45 @@
   transform: translateY(-1px);
 }
 
+/* Pinned to the right of the toolbar (i.e. top-right of the table below it) whether
+   or not the Settings link next to it is rendered. */
+.draft-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  padding: 0.6rem 1rem;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.draft-mode-btn svg {
+  display: block;
+}
+
+.draft-mode-btn:hover:not(:disabled) {
+  background: var(--btn-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.draft-mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.draft-mode-btn[aria-pressed="true"] {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  border-color: transparent;
+  color: #fff;
+}
+
 .board-loading {
   display: flex;
   flex-direction: column;
@@ -324,6 +363,12 @@
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
+  cursor: pointer;
+  transition: height 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.round-chip:hover {
+  border-color: var(--border-strong);
 }
 
 .round-number {
@@ -345,6 +390,27 @@
   min-width: 11rem;
   padding: 0;
   vertical-align: stretch;
+}
+
+/* ---------- Enlarged row (click a round chip to highlight its row) ---------- */
+/* A real height increase, not a transform: growing .round-chip's own height (a fixed
+   size, not a table-cell-derived one) is what actually stretches the row — every
+   <td> in a row shares the row's height, and .player-card/.add-player-btn/
+   .empty-pick-cell already fill their cell via height: 100%, so they grow right
+   along with it with no extra rules needed. That also pushes the rows below down
+   (real reflow), unlike a transform, which only overlaps neighbors visually.
+   Deliberately on .round-chip, not .round-cell or .table-row — .round-cell is
+   position: sticky (see above), and transforming (or otherwise reflowing in a way
+   that involves) a sticky element's own ancestor can break its stickiness in some
+   browsers; growing the non-sticky content inside it avoids that risk. */
+.table-row.row-enlarged {
+  background: var(--surface-1-hover);
+}
+
+.table-row.row-enlarged .round-chip {
+  height: 7.5rem; /* 2x the standard 3.75rem — the row grows to match */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  border-color: var(--border-strong);
 }
 
 .player-card {
@@ -501,7 +567,13 @@
 }
 
 /* ---------- Edit form ---------- */
+/* box-sizing must be explicit here: like .empty-pick-cell/.add-player-btn above,
+   this is a <div>, which defaults to content-box unlike <button> — without this,
+   the 0.6rem padding was added on top of the 100% width instead of eating into it,
+   pushing the whole edit form (input + suggestions dropdown) past its own table
+   cell and into the tile in the next column. */
 .edit-form {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -571,7 +643,12 @@
   top: calc(100% + 0.4rem);
   left: 0;
   right: 0;
-  min-width: 16rem;
+  /* No min-width here on purpose: left/right: 0 already sizes this to match
+     .input-container (i.e. the cell's own content width). A min-width wider than a
+     table column (.player-cell is min-width: 11rem, well under the 16rem this used
+     to force) made the dropdown spill past its own cell and overlap the tile in the
+     next column — removing it keeps the dropdown within its own tile, respecting the
+     draft-table's normal border-spacing gap between cells like everything else does. */
   background: var(--dropdown-bg);
   border: 1px solid var(--border-strong);
   border-radius: 0.75rem;
@@ -744,6 +821,40 @@
 
 .table-wrapper::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* ---------- Draft Mode ---------- */
+/* Hides the page chrome above the table (title, subtitle, legend, top-corner
+   buttons) and lets the board panel fill the screen. table-layout: fixed plus
+   dropping every column's min-width means the browser divides the table's full
+   width evenly across however many teams there are, instead of each column
+   holding its normal min-width — that's what keeps every team column on screen
+   with no horizontal scrolling, regardless of team count. */
+.container.draft-mode {
+  padding: 1rem 1rem 1.25rem;
+}
+
+.container.draft-mode .board-header {
+  display: none;
+}
+
+.container.draft-mode .board-panel-toolbar,
+.container.draft-mode .board-panel {
+  max-width: none;
+}
+
+.container.draft-mode .table-wrapper {
+  max-height: calc(100vh - 6.5rem);
+}
+
+.container.draft-mode .draft-table {
+  table-layout: fixed;
+}
+
+.container.draft-mode .team-header,
+.container.draft-mode .player-cell,
+.container.draft-mode .no-teams-cell {
+  min-width: 0;
 }
 
 /* Below this width the corner buttons no longer have room beside the

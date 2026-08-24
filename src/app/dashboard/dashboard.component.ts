@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -55,6 +55,33 @@ export class DashboardComponent implements OnInit {
 
   // Team roster modal state
   selectedRosterTeam: string | null = null;
+
+  // Draft Mode: hides the page chrome (title, legend, top-corner buttons) and lets
+  // the table fill the screen, with every team column shrunk to fit — see the
+  // `.draft-mode` rules in dashboard.component.css. Purely a local display toggle,
+  // not persisted anywhere.
+  draftMode = false;
+
+  toggleDraftMode(): void {
+    this.draftMode = !this.draftMode;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.draftMode) {
+      this.draftMode = false;
+    }
+  }
+
+  // Highlights a round's whole row (slightly enlarged — see .row-enlarged in
+  // dashboard.component.css) when its round chip is clicked. Purely a local display
+  // toggle, not persisted. Clicking the already-selected round clears it; clicking a
+  // different round moves the highlight there instead of stacking multiple.
+  selectedRound: number | null = null;
+
+  toggleRoundSelection(round: number): void {
+    this.selectedRound = this.selectedRound === round ? null : round;
+  }
 
   // Loading state — the board table stays hidden behind a spinner until all loads settle.
   playersLoaded: boolean = false;
@@ -135,7 +162,7 @@ export class DashboardComponent implements OnInit {
   // loadSettings and loadDraftBoard fire in parallel — whichever settles second must
   // re-run this so team rosters reflect the correct round count and Team Size either
   // way.
-  private applySettings(settings: Pick<DraftSettings, 'rounds' | 'qb' | 'rb' | 'wr' | 'te' | 'dst' | 'k'>): void {
+  private applySettings(settings: Pick<DraftSettings, 'rounds' | 'qb' | 'rb' | 'wr' | 'te' | 'dst' | 'k' | 'bench'>): void {
     this.rounds = settings.rounds;
     this.roundNumbers = Array.from({ length: this.rounds }, (_, i) => i + 1);
     this.rosterConfig = toRosterConfig(settings);

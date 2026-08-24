@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container" [class.draft-mode]="draftMode">
   <div class="board-header">
     <div class="header-left-actions">
       <button class="theme-toggle" type="button" (click)="theme.toggle()"
@@ -61,14 +61,34 @@
     </div>
   </div>
 
-  <div class="board-panel-toolbar" *ngIf="isCommissioner()">
-    <a routerLink="/settings" class="settings-btn-compact" aria-label="Settings">
+  <div class="board-panel-toolbar">
+    <a routerLink="/settings" class="settings-btn-compact" *ngIf="isCommissioner()" aria-label="Settings">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
       </svg>
       <span>Settings</span>
     </a>
+
+    <button
+      type="button"
+      class="draft-mode-btn"
+      [disabled]="isLoading()"
+      [attr.aria-pressed]="draftMode"
+      [attr.aria-label]="draftMode ? 'Exit Draft Mode' : 'Enter Draft Mode'"
+      (click)="toggleDraftMode()">
+      <ng-container *ngIf="!draftMode; else minimizeIcon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        </svg>
+      </ng-container>
+      <ng-template #minimizeIcon>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        </svg>
+      </ng-template>
+      <span>{{ draftMode ? 'Exit Draft Mode' : 'Draft Mode' }}</span>
+    </button>
   </div>
 
   <div class="board-panel">
@@ -96,9 +116,17 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let round of roundNumbers" class="table-row">
+          <tr *ngFor="let round of roundNumbers" class="table-row" [class.row-enlarged]="selectedRound === round">
             <td class="round-cell">
-              <div class="round-chip">
+              <div
+                class="round-chip"
+                (click)="toggleRoundSelection(round)"
+                (keydown.enter)="toggleRoundSelection(round)"
+                (keydown.space)="toggleRoundSelection(round); $event.preventDefault()"
+                role="button"
+                tabindex="0"
+                [attr.aria-pressed]="selectedRound === round"
+                [attr.aria-label]="'Highlight round ' + round">
                 <span class="round-number">{{ round }}</span>
                 <span class="round-label">ROUND</span>
               </div>

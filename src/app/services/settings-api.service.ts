@@ -13,6 +13,7 @@ export interface DraftSettings {
   te: number;
   dst: number;
   k: number;
+  bench: number;
 }
 
 /** The settings fields `setSettings` accepts — every field but `sessionId`. */
@@ -31,7 +32,7 @@ export class SettingsApiService {
 
   /**
    * GET /getSettings — returns the current session's settings (`rounds` plus Team
-   * Size: `qb`/`rb`/`wr`/`te`/`dst`/`k`), defaulting server-side field by field when
+   * Size: `qb`/`rb`/`wr`/`te`/`dst`/`k`/`bench`), defaulting server-side field by field when
    * the session has never customized them. Meant to be called once per page load, not
    * polled — a setting changed mid-draft by the commissioner is only picked up
    * elsewhere on the next page load.

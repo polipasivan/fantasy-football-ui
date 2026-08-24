@@ -7,7 +7,7 @@ describe('buildRosterBreakdown', () => {
     const roster = buildRosterBreakdown([]);
     const rbGroup = roster.starters.find(s => s.position === 'RB');
     expect(rbGroup?.slots.length).toBe(2); // STANDARD_ROSTER default
-    expect(roster.bench.length).toBe(7);
+    expect(roster.bench.length).toBe(8);
   });
 
   it('respects a custom Team Size config — more starter slots at a position', () => {
@@ -22,6 +22,12 @@ describe('buildRosterBreakdown', () => {
     const wrGroup = roster.starters.find(s => s.position === 'WR');
     expect(wrGroup?.slots.map(s => s?.name)).toEqual(['WR One', 'WR Two', 'WR Three']);
     expect(roster.bench.every(s => s === null)).toBeTrue(); // none pushed to bench
+  });
+
+  it('respects a custom Team Size config — a different bench count', () => {
+    const config = toRosterConfig({ qb: 1, rb: 2, wr: 2, te: 1, dst: 1, k: 1, bench: 3 });
+    const roster = buildRosterBreakdown([], config);
+    expect(roster.bench.length).toBe(3);
   });
 
   it('a position configured to 0 slots sends every pick at that position straight to the bench', () => {
@@ -61,8 +67,8 @@ describe('hasOpenRosterSlot with a custom config', () => {
   });
 
   it('is false once the custom (smaller) WR allotment and the bench are both full', () => {
-    // 1 WR starter slot (custom) + 7 bench slots = 8 total WR-eligible spots.
-    const picks: DraftPlayer[] = Array.from({ length: 8 }, (_, i) => ({
+    // 1 WR starter slot (custom) + 8 bench slots = 9 total WR-eligible spots.
+    const picks: DraftPlayer[] = Array.from({ length: 9 }, (_, i) => ({
       round: i + 1, name: `WR ${i + 1}`, position: 'WR'
     }));
     const roster = buildRosterBreakdown(picks, config);

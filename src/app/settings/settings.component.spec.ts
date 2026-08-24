@@ -10,7 +10,7 @@ describe('SettingsComponent', () => {
   let fixture: ComponentFixture<SettingsComponent>;
   let httpMock: HttpTestingController;
 
-  const DEFAULT_POSITION_COUNTS = { qb: 1, rb: 2, wr: 2, te: 1, dst: 1, k: 1 };
+  const DEFAULT_POSITION_COUNTS = { qb: 1, rb: 2, wr: 2, te: 1, dst: 1, k: 1, bench: 8 };
 
   function settingsResponse(overrides: Partial<typeof DEFAULT_POSITION_COUNTS & { rounds: number }> = {}) {
     return { sessionId: '1234', rounds: 15, ...DEFAULT_POSITION_COUNTS, ...overrides };
@@ -326,6 +326,52 @@ describe('SettingsComponent', () => {
     component.updateTeamSize();
     expect(component.savingTeamSize).toBeFalse();
     httpMock.expectNone(r => r.url.includes('setSettings'));
+  });
+
+  // ---------- Team Size: bench ----------
+  // Bench is a Team Size field like any other (see roster-config.ts's
+  // PositionCounts), wired through the exact same generic stepper/save mechanism —
+  // these mirror the wr/rb coverage above rather than re-testing every edge case.
+
+  it('renders a bench stepper last, after K', () => {
+    loadWithRounds(15);
+    expect(component.positionFields[component.positionFields.length - 1].key).toBe('bench');
+    expect(component.positionFields[component.positionFields.length - 1].label).toBe('BENCH');
+  });
+
+  it('loads a customized bench count from getSettings', () => {
+    loadWithSettings({ bench: 10 });
+    const bench = component.positionFields.find(f => f.key === 'bench')!;
+    expect(bench.count).toBe(10);
+    expect(component.teamSizeDirty).toBeFalse();
+  });
+
+  it('increments and decrements the bench count, marking it dirty', () => {
+    loadWithRounds(15);
+    const bench = component.positionFields.find(f => f.key === 'bench')!;
+
+    component.incrementPositionCount(bench);
+    expect(bench.count).toBe(9);
+    expect(component.teamSizeDirty).toBeTrue();
+
+    component.decrementPositionCount(bench);
+    component.decrementPositionCount(bench);
+    expect(bench.count).toBe(7);
+    expect(component.teamSizeDirty).toBeTrue();
+  });
+
+  it('sends only bench to setSettings when only bench changed', () => {
+    loadWithRounds(15);
+    const bench = component.positionFields.find(f => f.key === 'bench')!;
+    component.incrementPositionCount(bench); // 8 -> 9
+
+    component.updateTeamSize();
+
+    const req = httpMock.expectOne(r => r.url.includes('setSettings'));
+    expect(req.request.body).toEqual({ sessionId: '', bench: 9 });
+    req.flush(settingsResponse({ bench: 9 }));
+
+    expect(component.teamSizeDirty).toBeFalse();
   });
 
   it('shows an error and keeps the pending values if the team size save fails', () => {
