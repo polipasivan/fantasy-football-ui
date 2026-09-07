@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { EMPTY, Observable, ReplaySubject, Subscription, catchError, interval, startWith, switchMap } from 'rxjs';
 import { API_BASE_URL } from '../constants';
 import { SessionService } from './session.service';
+
+// How often the shared draft-board poll (see startPolling) hits the backend.
+export const DRAFT_BOARD_POLL_INTERVAL_MS = 4000;
 
 export interface DraftPlayer {
   round: number;
@@ -36,6 +39,15 @@ export interface DraftBoardResponse {
   providedIn: 'root'
 })
 export class DraftApiService {
+  // Every page that cares about the draft board (Dashboard, Players) shares this one
+  // poll instead of each running its own — see startPolling(). ReplaySubject(1) means a
+  // page that starts subscribing after polling is already running (e.g. navigating from
+  // Dashboard to Players) gets the latest snapshot immediately rather than waiting for
+  // the next tick.
+  private readonly draftBoardSubject = new ReplaySubject<DraftBoardResponse>(1);
+  readonly draftBoard$: Observable<DraftBoardResponse> = this.draftBoardSubject.asObservable();
+  private pollingSubscription?: Subscription;
+
   constructor(private http: HttpClient, private sessionService: SessionService) {}
 
   /**
@@ -45,6 +57,34 @@ export class DraftApiService {
     return this.http.get<DraftBoardResponse>(`${API_BASE_URL}/getDraftBoard`, {
       params: { sessionId: this.sessionService.getSessionId() }
     });
+  }
+
+  /**
+   * Starts the shared draft-board poll if it isn't already running — safe to call from
+   * every page's ngOnInit (Dashboard's and Players'); only the first call actually
+   * starts anything. Fetches immediately, then every `intervalMs`, pushing each
+   * response onto draftBoard$ for every current and future subscriber. A failed tick is
+   * logged and skipped rather than killing the poll — the next tick just tries again.
+   */
+  startPolling(intervalMs: number = DRAFT_BOARD_POLL_INTERVAL_MS): void {
+    if (this.pollingSubscription) return;
+    this.pollingSubscription = interval(intervalMs)
+      .pipe(
+        startWith(0),
+        switchMap(() => this.getDraftBoard().pipe(
+          catchError((err) => {
+            console.error('Draft board poll failed', err);
+            return EMPTY;
+          })
+        ))
+      )
+      .subscribe((res) => this.draftBoardSubject.next(res));
+  }
+
+  /** Stops the shared poll — call when the session ends (see DashboardComponent.leaveDraft). */
+  stopPolling(): void {
+    this.pollingSubscription?.unsubscribe();
+    this.pollingSubscription = undefined;
   }
 
   /**

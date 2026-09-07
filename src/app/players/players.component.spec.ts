@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter } from '@angular/router';
 
 import { PlayersComponent } from './players.component';
+import { DraftApiService } from '../services/draft-api.service';
 
 describe('PlayersComponent', () => {
   let component: PlayersComponent;
@@ -33,6 +34,10 @@ describe('PlayersComponent', () => {
 
   afterEach(() => {
     httpMock.verify();
+    // The draft-board poll (started in ngOnInit via DraftApiService.startPolling) lives
+    // on the shared service, not on the component — stop it explicitly so it doesn't
+    // keep firing in the background against a torn-down TestBed in a later test.
+    TestBed.inject(DraftApiService).stopPolling();
   });
 
   it('should create', () => {
@@ -59,15 +64,18 @@ describe('PlayersComponent', () => {
     expect(component.isDrafted('Available Guy')).toBeFalse();
   });
 
-  it('re-fetches the draft board (not a cached snapshot) on every load', () => {
+  it('updates crossed-out players when the shared draft-board poll emits again, not just on the initial load', () => {
     fixture.detectChanges();
     httpMock.expectOne(req => req.url.includes('.csv')).flush(csv);
     httpMock.expectOne(req => req.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
 
     expect(component.isDrafted('Drafted Guy')).toBeFalse();
 
-    component.loadDraftedPlayers();
-    httpMock.expectOne(req => req.url.includes('getDraftBoard')).flush({
+    // Simulate the admin adding the player on the Dashboard while this page stays open —
+    // pushed directly onto the shared draftBoard$ stream (see DraftApiService.startPolling)
+    // to stand in for a later poll tick, since that poll's own timing is already covered
+    // in draft-api.service.spec.ts; this just checks that PlayersComponent reacts to it.
+    (TestBed.inject(DraftApiService) as any).draftBoardSubject.next({
       sessionId: '1234',
       teams: [{ sessionId: '1234', teamName: 'Team A', players: [{ round: 1, name: 'Drafted Guy', position: 'RB' }] }],
       count: 1

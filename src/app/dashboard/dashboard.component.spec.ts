@@ -6,6 +6,7 @@ import { Router, provideRouter } from '@angular/router';
 import { DashboardComponent } from './dashboard.component';
 import { Player } from '../services/player.service';
 import { SessionService } from '../services/session.service';
+import { DraftApiService } from '../services/draft-api.service';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -37,9 +38,11 @@ describe('DashboardComponent', () => {
 
   afterEach(() => {
     httpMock.verify();
-    // Destroys the fixture so DashboardComponent's polling interval (started in ngOnInit)
-    // is unsubscribed via takeUntilDestroyed — otherwise it keeps firing in the background
+    // The draft-board poll (started in ngOnInit via DraftApiService.startPolling) lives
+    // on the shared service, not on the component, so destroying the fixture alone
+    // doesn't stop it — stop it explicitly, otherwise it keeps firing in the background
     // and can issue unmatched getDraftBoard requests against a torn-down TestBed later on.
+    TestBed.inject(DraftApiService).stopPolling();
     fixture.destroy();
     localStorage.clear();
     sessionStorage.clear();

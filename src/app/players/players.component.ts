@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PlayerService, Player } from '../services/player.service';
@@ -25,7 +26,11 @@ export class PlayersComponent implements OnInit {
   teams: string[] = [];
   positions: string[] = [];
 
-  constructor(private playerService: PlayerService, private draftApi: DraftApiService) {}
+  constructor(
+    private playerService: PlayerService,
+    private draftApi: DraftApiService,
+    private destroyRef: DestroyRef
+  ) {}
 
   ngOnInit(): void {
     this.playerService.loadPlayers().subscribe(players => {
@@ -33,24 +38,25 @@ export class PlayersComponent implements OnInit {
       this.filteredPlayers = players;
       this.extractUniqueValues();
     });
-    this.loadDraftedPlayers();
+    this.subscribeToDraftBoard();
+    this.draftApi.startPolling();
   }
 
-  // Cross-outs must reflect the current session's draft board, fetched fresh on every
-  // page load — not a cached, session-agnostic snapshot.
-  loadDraftedPlayers(): void {
-    this.draftApi.getDraftBoard().subscribe({
-      next: (res) => {
+  // Cross-outs must reflect the current session's draft board, and stay in sync as the
+  // admin adds/removes players — sourced from the shared poll (see
+  // DraftApiService.draftBoard$/startPolling) rather than a one-off fetch, so this page
+  // picks up changes made elsewhere (Dashboard, another tab) without running its own
+  // separate poll against the same endpoint.
+  private subscribeToDraftBoard(): void {
+    this.draftApi.draftBoard$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((res) => {
         const drafted = new Set<string>();
         (res.teams ?? []).forEach(team => {
           (team.players ?? []).forEach(player => drafted.add(player.name));
         });
         this.draftedPlayers = drafted;
-      },
-      error: (err) => {
-        console.error('Failed to load drafted players', err);
-      }
-    });
+      });
   }
 
   extractUniqueValues(): void {

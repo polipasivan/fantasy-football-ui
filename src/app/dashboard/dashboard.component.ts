@@ -3,7 +3,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { EMPTY, catchError, interval, switchMap } from 'rxjs';
 import { PlayerService, Player } from '../services/player.service';
 import { ThemeService } from '../services/theme.service';
 import { SessionService } from '../services/session.service';
@@ -88,9 +87,6 @@ export class DashboardComponent implements OnInit {
   boardLoaded: boolean = false;
   settingsLoaded: boolean = false;
 
-  // How often other viewers' boards poll the backend for changes made by the commissioner.
-  private readonly pollIntervalMs = 4000;
-
   // Cell keys with a player write currently in flight. A poll tick landing mid-write (or
   // before a failed write has rolled back) must not clobber that optimistic local state
   // with the stale server response — this set tells applyDraftBoard() what to leave alone.
@@ -122,6 +118,7 @@ export class DashboardComponent implements OnInit {
   leaveDraft(): void {
     this.sessionService.clearSession();
     this.sessionService.clearCommissionerPassword();
+    this.draftApi.stopPolling();
     this.router.navigateByUrl('/login');
   }
 
@@ -134,9 +131,9 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPlayers();
-    this.loadDraftBoard();
+    this.subscribeToDraftBoard();
     this.loadSettings();
-    this.startPolling();
+    this.draftApi.startPolling();
   }
 
   // Loaded once on init — deliberately not polled (see SettingsApiService). If the
@@ -183,35 +180,18 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // Load all teams + drafted players for the current session from the backend.
-  loadDraftBoard(): void {
-    this.draftApi.getDraftBoard().subscribe({
-      next: (res) => {
+  // Reacts to every snapshot from the shared draft-board poll (see
+  // DraftApiService.draftBoard$/startPolling) — both the initial fetch and every
+  // subsequent tick land here, so every open tab (commissioner and viewers alike)
+  // picks up picks/removals/teams made from someone else's tab without this component
+  // running a poll of its own.
+  private subscribeToDraftBoard(): void {
+    this.draftApi.draftBoard$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((res) => {
         this.applyDraftBoard(res);
         this.boardLoaded = true;
-      },
-      error: (err) => {
-        console.error('Failed to load draft board', err);
-        this.boardLoaded = true;
-      }
-    });
-  }
-
-  // Poll the backend on an interval so every open tab (commissioner and viewers alike)
-  // picks up picks/removals/teams made from someone else's tab. A failed tick is logged
-  // and skipped rather than killing the interval — the next tick just tries again.
-  private startPolling(): void {
-    interval(this.pollIntervalMs)
-      .pipe(
-        switchMap(() => this.draftApi.getDraftBoard().pipe(
-          catchError((err) => {
-            console.error('Draft board poll failed', err);
-            return EMPTY;
-          })
-        )),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((res) => this.applyDraftBoard(res));
+      });
   }
 
   // Rebuild teams/draftData from a server response, without stomping on any

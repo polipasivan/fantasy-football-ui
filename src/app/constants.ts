@@ -8,8 +8,10 @@ export interface DraftRoom {
   sessionId: string;
 }
 
-// "Fam Bam" maps to the session id the deployed table already has real draft data under.
+// "Fam Bam" is the go-forward session id for the draft (started fresh — the deployed
+// table's prior real draft data under sessionId 1234 is intentionally left behind,
+// not migrated).
 export const DRAFT_ROOMS: DraftRoom[] = [
-  { name: 'Fam Bam', sessionId: '1234' },
+  { name: 'Fam Bam', sessionId: '4321' },
   { name: 'Diesel Clan', sessionId: '9876' }
 ];
