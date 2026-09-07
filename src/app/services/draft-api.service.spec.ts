@@ -1,8 +1,8 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick, discardPeriodicTasks } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { DraftApiService } from './draft-api.service';
+import { DraftApiService, DRAFT_BOARD_POLL_INTERVAL_MS } from './draft-api.service';
 import { SessionService } from './session.service';
 
 describe('DraftApiService', () => {
@@ -104,4 +104,80 @@ describe('DraftApiService', () => {
     expect(req.request.headers.get('X-Commissioner-Password')).toBe('fambam123');
     req.flush({ sessionId: '1234', teamName: 'Team A', players: [], draftOrder: 1 });
   });
+
+  // ---------- Shared draft-board poll (startPolling/draftBoard$) ----------
+
+  it('fetches immediately on startPolling and pushes the response onto draftBoard$', fakeAsync(() => {
+    const seen: any[] = [];
+    service.draftBoard$.subscribe(res => seen.push(res));
+
+    service.startPolling();
+    httpMock.expectOne(r => r.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+
+    expect(seen.length).toBe(1);
+    expect(seen[0].sessionId).toBe('1234');
+    service.stopPolling();
+    discardPeriodicTasks();
+  }));
+
+  it('is idempotent — a second startPolling call does not start a second poll', fakeAsync(() => {
+    service.startPolling();
+    httpMock.expectOne(r => r.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+
+    service.startPolling();
+    expect(httpMock.match(r => r.url.includes('getDraftBoard')).length).toBe(0);
+
+    service.stopPolling();
+    discardPeriodicTasks();
+  }));
+
+  it('shares one poll across multiple subscribers — a late subscriber gets the latest snapshot immediately', fakeAsync(() => {
+    service.startPolling();
+    httpMock.expectOne(r => r.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+
+    let lateValue: any;
+    service.draftBoard$.subscribe(res => lateValue = res);
+    expect(lateValue.sessionId).toBe('1234');
+
+    service.stopPolling();
+    discardPeriodicTasks();
+  }));
+
+  it('re-fetches on the next tick after the poll interval elapses', fakeAsync(() => {
+    service.startPolling();
+    httpMock.expectOne(r => r.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+
+    tick(DRAFT_BOARD_POLL_INTERVAL_MS);
+    const req = httpMock.expectOne(r => r.url.includes('getDraftBoard'));
+    expect(req.request.method).toBe('GET');
+    req.flush({ sessionId: '1234', teams: [], count: 1 });
+
+    service.stopPolling();
+    discardPeriodicTasks();
+  }));
+
+  it('stops issuing requests once stopPolling is called', fakeAsync(() => {
+    service.startPolling();
+    httpMock.expectOne(r => r.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+
+    service.stopPolling();
+    tick(DRAFT_BOARD_POLL_INTERVAL_MS);
+    expect(httpMock.match(r => r.url.includes('getDraftBoard')).length).toBe(0);
+  }));
+
+  it('a failed poll tick is logged and skipped, without killing the poll', fakeAsync(() => {
+    spyOn(console, 'error');
+
+    service.startPolling();
+    httpMock.expectOne(r => r.url.includes('getDraftBoard'))
+      .flush({ message: 'error' }, { status: 500, statusText: 'Server Error' });
+
+    expect(console.error).toHaveBeenCalled();
+
+    tick(DRAFT_BOARD_POLL_INTERVAL_MS);
+    httpMock.expectOne(r => r.url.includes('getDraftBoard')).flush({ sessionId: '1234', teams: [], count: 0 });
+
+    service.stopPolling();
+    discardPeriodicTasks();
+  }));
 });
